@@ -1,26 +1,162 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* ============================
+   BASE STYLES
+   ============================ */
+
+html, body {
+  color: #111827;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+input,
+textarea,
+select,
+button {
+  color: #111827 !important;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+input::placeholder,
+textarea::placeholder {
+  color: #6b7280 !important;
+  opacity: 1 !important;
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+option {
+  color: #111827;
+  background: #ffffff;
 }
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+select:-webkit-autofill {
+  -webkit-text-fill-color: #111827 !important;
+  -webkit-box-shadow: 0 0 0px 1000px #ffffff inset !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+/* ============================
+   DARK MODE — Neutral (No Purple)
+   ============================ */
+
+.dark body {
+  background: #0a0a0a !important;
+  color: #fafafa !important;
+}
+
+/* Cards & backgrounds */
+.dark .bg-white { background-color: #18181b !important; }
+.dark .bg-gray-50 { background-color: #1f1f23 !important; }
+.dark .bg-gray-100 { background-color: #1f1f23 !important; }
+.dark .bg-gray-200 { background-color: #27272a !important; }
+
+/* Text colors */
+.dark .text-gray-900,
+.dark .text-gray-800,
+.dark .text-black { color: #fafafa !important; }
+.dark .text-gray-700 { color: #e4e4e7 !important; }
+.dark .text-gray-600 { color: #d4d4d8 !important; }
+.dark .text-gray-500 { color: #a1a1aa !important; }
+.dark .text-gray-400 { color: #a1a1aa !important; }
+.dark .text-gray-300 { color: #71717a !important; }
+
+/* Blue text */
+.dark .text-blue-900,
+.dark .text-blue-950 { color: #93c5fd !important; }
+.dark .text-blue-800,
+.dark .text-blue-700 { color: #60a5fa !important; }
+.dark .text-blue-600 { color: #60a5fa !important; }
+
+/* Headings */
+.dark h1,
+.dark h2,
+.dark h3 { color: #fafafa; }
+
+/* Borders */
+.dark .border-gray-100,
+.dark .border-gray-200,
+.dark .border-gray-300 { border-color: #27272a !important; }
+.dark .divide-gray-100 > * + *,
+.dark .divide-gray-200 > * + * { border-color: #27272a !important; }
+
+/* Inputs */
+.dark input,
+.dark textarea,
+.dark select {
+  background-color: #18181b !important;
+  color: #fafafa !important;
+  border-color: #3f3f46 !important;
+}
+.dark input::placeholder,
+.dark textarea::placeholder { color: #71717a !important; }
+.dark input:focus,
+.dark textarea:focus,
+.dark select:focus {
+  background-color: #1f1f23 !important;
+  border-color: #1e5eb8 !important;
+  box-shadow: 0 0 0 3px rgba(30, 94, 184, 0.2) !important;
+}
+
+/* Hover on gray */
+.dark .hover\:bg-gray-50:hover,
+.dark .hover\:bg-gray-100:hover,
+.dark .hover\:bg-gray-200:hover { background-color: #27272a !important; }
+
+/* Transparent gray backgrounds */
+.dark .bg-gray-50\/60,
+.dark .bg-gray-50\/80,
+.dark .bg-gray-50\/40 { background-color: #1f1f23 !important; }
+
+/* Colored light backgrounds - muted */
+.dark .bg-blue-50,
+.dark .bg-blue-100 { background-color: #172236 !important; }
+.dark .bg-emerald-50,
+.dark .bg-emerald-100 { background-color: #14291f !important; }
+.dark .bg-amber-50,
+.dark .bg-amber-100 { background-color: #2a1f10 !important; }
+.dark .bg-red-50,
+.dark .bg-red-100 { background-color: #2a1414 !important; }
+.dark .bg-purple-50,
+.dark .bg-purple-100 { background-color: #1f1b2e !important; }
+
+/* Tables */
+.dark table thead.bg-gray-50 { background-color: #1f1f23 !important; }
+.dark table tr:hover { background-color: rgba(255, 255, 255, 0.03) !important; }
+
+/* Main areas */
+.dark main.bg-white { background-color: #0a0a0a !important; }
+.dark main .bg-white { background-color: #18181b !important; }
+.dark .flex-1.flex.flex-col.relative.bg-white { background-color: #0f0f11 !important; }
+
+/* Inside white cards */
+.dark .bg-white .text-gray-900,
+.dark .bg-white .text-gray-800 { color: #fafafa !important; }
+.dark .bg-white .text-gray-600 { color: #a1a1aa !important; }
+.dark .bg-white .text-gray-700 { color: #d4d4d8 !important; }
+.dark .bg-white .text-gray-500 { color: #a1a1aa !important; }
+
+/* Buttons */
+.dark button.bg-white,
+.dark a.bg-white {
+  background-color: #1f1f23 !important;
+  color: #fafafa !important;
+  border-color: #27272a !important;
+}
+.dark button.bg-white:hover,
+.dark a.bg-white:hover { background-color: #27272a !important; }
+
+/* Scrollbar */
+.dark ::-webkit-scrollbar { background-color: #0a0a0a; }
+.dark ::-webkit-scrollbar-thumb { background-color: #3f3f46; border-radius: 10px; }
+.dark ::-webkit-scrollbar-thumb:hover { background-color: #52525b; }
+
+/* Status colors */
+.dark .bg-emerald-50 .text-emerald-800,
+.dark .bg-emerald-50 .text-emerald-700 { color: #86efac !important; }
+.dark .bg-red-50 .text-red-800,
+.dark .bg-red-50 .text-red-700 { color: #fca5a5 !important; }
+.dark .bg-amber-50 .text-amber-800,
+.dark .bg-amber-50 .text-amber-700 { color: #fcd34d !important; }
+.dark .bg-blue-50 .text-blue-800,
+.dark .bg-blue-50 .text-blue-700 { color: #93c5fd !important; }

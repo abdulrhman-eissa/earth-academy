@@ -1,6 +1,18 @@
 import { NextResponse } from "next/server";
 
-let submissionsDatabase: any[] = [
+interface Submission {
+  id: number;
+  studentName: string;
+  studentId: string;
+  course: string;
+  submitTime: string;
+  pasteAttempts: number;
+  defenseStatus: string;
+  integrityScore: number;
+  statusColor: string;
+}
+
+const submissionsDatabase: Submission[] = [
   {
     id: 1,
     studentName: "أحمد محمود علي",

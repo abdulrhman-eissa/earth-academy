@@ -5,7 +5,6 @@ import { ShieldAlert, CheckCircle2, AlertTriangle, Send, Timer } from "lucide-re
 
 export default function AntiAiEditor() {
   const [text, setText] = useState("");
-  const [wordCount, setWordCount] = useState(0);
   const [startTime, setStartTime] = useState<number | null>(null);
   const [pasteAttempts, setPasteAttempts] = useState(0);
 
@@ -14,10 +13,7 @@ export default function AntiAiEditor() {
   const [defenseAnswer, setDefenseAnswer] = useState("");
   const [submittedSuccessfully, setSubmittedSuccessfully] = useState(false);
 
-  useEffect(() => {
-    const words = text.trim().split(/\s+/).filter(Boolean);
-    setWordCount(text.trim() === "" ? 0 : words.length);
-  }, [text]);
+  const wordCount = text.trim() === "" ? 0 : text.trim().split(/\s+/).filter(Boolean).length;
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -62,7 +58,7 @@ export default function AntiAiEditor() {
         }),
       });
       setSubmittedSuccessfully(true);
-    } catch (error) {
+    } catch {
       alert("حدث خطأ أثناء التسليم، يرجى المحاولة مرة أخرى.");
     }
   };
@@ -123,7 +119,7 @@ export default function AntiAiEditor() {
           </div>
 
           <p className="text-gray-800 mb-3 font-medium">
-            سؤال مباشر على تحليلكم: <strong>"ما السند الأكاديمي أو القاعدة الرئيسية التي اعتمدت عليها في استنتاجك المكتوب؟"</strong>
+            سؤال مباشر على تحليلكم: <strong>&quot;ما السند الأكاديمي أو القاعدة الرئيسية التي اعتمدت عليها في استنتاجك المكتوب؟&quot;</strong>
           </p>
 
           <input

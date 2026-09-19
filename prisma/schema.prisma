@@ -1,0 +1,235 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum NotificationType {
+  RESEARCH_SUBMITTED
+  GRADE_ADDED
+  GRADE_UPDATED
+  INFO
+}
+
+enum UserRole {
+  ADMIN
+  AFFAIRS
+  FACULTY
+  STUDENT
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  INACTIVE
+}
+
+enum AcademicLevel {
+  LEVEL_1
+  LEVEL_2
+  LEVEL_3
+  LEVEL_4
+}
+
+model User {
+  id           String     @id @default(cuid())
+  email        String     @unique
+  passwordHash String
+  role         UserRole
+  status       UserStatus @default(ACTIVE)
+
+  studentProfile StudentProfile?
+  facultyProfile FacultyProfile?
+  assignments    Assignment[]    @relation("FacultyAssignments")
+  submissions    Submission[]    @relation("StudentSubmissions")
+  notifications  Notification[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([role])
+  @@index([status])
+}
+
+model College {
+  id   String @id @default(cuid())
+  name String
+  code String @unique
+
+  departments Department[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Department {
+  id   String @id @default(cuid())
+  name String
+  code String
+
+  collegeId String
+  college   College @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+
+  students StudentProfile[]
+  faculty  FacultyProfile[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([collegeId, code])
+  @@index([collegeId])
+}
+
+model StudentProfile {
+  id String @id @default(cuid())
+
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  studentCode String @unique
+  fullName    String
+
+  departmentId String
+  department   Department @relation(fields: [departmentId], references: [id])
+
+  academicLevel  AcademicLevel
+  enrollmentYear Int
+
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  submissions Submission[]
+
+  chosenAssignmentId String?
+  chosenAssignment   Assignment? @relation("ChosenByStudent", fields: [chosenAssignmentId], references: [id], onDelete: SetNull)
+
+  @@index([departmentId])
+  @@index([academicLevel])
+}
+
+model FacultyProfile {
+  id String @id @default(cuid())
+
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  employeeCode  String  @unique
+  fullName      String
+  academicTitle String?
+
+  departmentId String
+  department   Department @relation(fields: [departmentId], references: [id])
+
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  assignments Assignment[]
+
+  @@index([departmentId])
+}
+
+enum AssignmentStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum SubmissionStatus {
+  SUBMITTED
+  REVIEWED
+  RETURNED
+}
+
+model Assignment {
+  id               String           @id @default(cuid())
+  title            String
+  description      String
+  course           String
+  deadline         DateTime?
+  isPublished      Boolean          @default(false)
+  status           AssignmentStatus @default(DRAFT)
+  facultyId        String
+  faculty          User             @relation("FacultyAssignments", fields: [facultyId], references: [id], onDelete: Cascade)
+  facultyProfileId String?
+  facultyProfile   FacultyProfile?  @relation(fields: [facultyProfileId], references: [id], onDelete: SetNull)
+  submissions      Submission[]
+  chosenBy         StudentProfile[] @relation("ChosenByStudent")
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  @@index([facultyId, status])
+  @@index([isPublished, deadline])
+  @@index([facultyProfileId])
+}
+
+model Submission {
+  id               String           @id @default(cuid())
+  assignmentId     String
+  assignment       Assignment       @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  studentId        String
+  student          User             @relation("StudentSubmissions", fields: [studentId], references: [id], onDelete: Cascade)
+  studentProfileId String?
+  studentProfile   StudentProfile?  @relation(fields: [studentProfileId], references: [id], onDelete: SetNull)
+  text             String
+  defenseAnswer    String?
+  pasteAttempts    Int              @default(0)
+  integrityScore   Int?
+  score            Int?
+  notes            String?
+  status           SubmissionStatus @default(SUBMITTED)
+  submittedAt      DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  @@unique([assignmentId, studentId])
+  @@index([assignmentId, status])
+  @@index([studentId, submittedAt])
+}
+
+
+model Notification {
+  id          String           @id @default(cuid())
+  userId      String
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type        NotificationType
+  title       String
+  body        String
+  isRead      Boolean          @default(false)
+  relatedId   String?
+  createdAt   DateTime         @default(now())
+
+  @@index([userId, isRead])
+  @@index([userId, createdAt])
+}
+
+
+model ContactMessage {
+  id        String   @id @default(cuid())
+  fullName  String
+  phone     String
+  role      String
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([isRead, createdAt])
+}
+
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  actorId     String?
+  actorEmail  String?
+  actorRole   String?
+  action      String
+  targetType  String?
+  targetId    String?
+  details     String?
+  ip          String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+
+  @@index([actorId])
+  @@index([action])
+  @@index([createdAt])
+}

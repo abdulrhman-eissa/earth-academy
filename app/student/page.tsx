@@ -1,287 +1,580 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { ShieldAlert, CheckCircle2, AlertTriangle, Send, Timer, ArrowRight, UserCheck } from "lucide-react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
+import {
+  GraduationCap, LogOut, Save, Send, CheckCircle2,
+  Bell, MessageSquare, X, ShieldCheck,
+  Bold, Italic, Underline, AlignRight, AlignCenter, AlignLeft,
+  FileText, Activity, BookOpen, UserCheck, AlertCircle, Plus, Minus,
+  Award
+} from "lucide-react";
 
-export default function StudentPage() {
-  // 1. بيانات الطالب الإجبارية
-  const [studentInfo, setStudentInfo] = useState({
-    fullName: "",
-    nationalIdOrCard: "",
-    gradeYear: "",
-    department: "",
-    nationality: "مصري",
-  });
-  const [isFormCompleted, setIsFormCompleted] = useState(false);
+interface ReplyNotification {
+  id: string;
+  originalMsg: string;
+  reply: string;
+  repliedAt: string;
+  isRead: boolean;
+}
 
-  // 2. حالة المحرر والتكليف
-  const [text, setText] = useState("");
-  const [wordCount, setWordCount] = useState(0);
-  const [pasteAttempts, setPasteAttempts] = useState(0);
+interface AvailableAssignment {
+  id: string;
+  title: string;
+  description: string;
+  course: string;
+  deadline: string | null;
+  faculty: {
+    email: string;
+    facultyProfile: { fullName: string; academicTitle: string | null } | null;
+  } | null;
+}
+
+export default function StudentDashboard() {
+  const router = useRouter();
+
+  const [studentName, setStudentName] = useState("");
+  const [nationalId, setNationalId] = useState("");
+  const [targetYear, setTargetYear] = useState("");
+  const [specialty, setSpecialty] = useState("");
+
+  const [doctorName, setDoctorName] = useState<string | null>(null);
+  const [subjectName, setSubjectName] = useState<string | null>(null);
+  const [minPages, setMinPages] = useState<number>(3);
+  const [maxPages, setMaxPages] = useState<number>(10);
+
+  const [researchTitle, setResearchTitle] = useState("");
+  const [researchContent, setResearchContent] = useState("");
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(60);
-  const [defenseAnswer, setDefenseAnswer] = useState("");
-  const [submittedSuccessfully, setSubmittedSuccessfully] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [assignments, setAssignments] = useState<AvailableAssignment[]>([]);
+  const [assignmentId, setAssignmentId] = useState("");
+
+  const [fontSize, setFontSize] = useState<number>(16);
+  const [isBold, setIsBold] = useState(false);
+  const [isItalic, setIsItalic] = useState(false);
+  const [isUnderline, setIsUnderline] = useState(false);
+  const [textAlign, setTextAlign] = useState<"right" | "center" | "left">("right");
+
+  const [runLogs, setRunLogs] = useState<string[]>([]);
+  const [autoSaveStatus] = useState("الحفظ النهائي عبر قاعدة البيانات");
+
+  const [notifications, setNotifications] = useState<ReplyNotification[]>([]);
+  const [showNotifModal, setShowNotifModal] = useState(false);
 
   useEffect(() => {
-    const words = text.trim().split(/\s+/).filter(Boolean);
-    setWordCount(text.trim() === "" ? 0 : words.length);
-  }, [text]);
+    let cancelled = false;
+    fetch("/api/auth/session", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ role: "STUDENT" }) })
+      .then((r) => r.json())
+      .then(async (data) => {
+        if (cancelled) return;
+        if (!data.authenticated || !data.session || data.session.role !== "STUDENT") {
+          router.replace("/student/login");
+          return;
+        }
+        const savedName = sessionStorage.getItem("student_name") || localStorage.getItem("earth_student_persistent_name") || "طالب أزهرية";
+        const savedYear = sessionStorage.getItem("student_year") || localStorage.getItem("earth_student_persistent_year") || "الفرقة الأولى";
+        const savedSpec = sessionStorage.getItem("student_specialty") || localStorage.getItem("earth_student_persistent_spec") || "تاريخ وحضارة";
+        const savedNId = sessionStorage.getItem("student_national_id") || localStorage.getItem("earth_student_persistent_id") || "";
 
-  useEffect(() => {
-    let timer: NodeJS.Timeout;
-    if (isSubmitted && timeLeft > 0 && !submittedSuccessfully) {
-      timer = setInterval(() => setTimeLeft((prev) => prev - 1), 1000);
+        setNationalId(savedNId);
+        setStudentName(savedName);
+        setTargetYear(savedYear);
+        setSpecialty(savedSpec);
+
+        const assignCheck = await fetch("/api/student/assignment").then((r) => r.json()).catch(() => ({ hasChosen: false }));
+        if (!assignCheck.hasChosen) {
+          router.replace("/student/select-assignment");
+          return;
+        }
+        loadFacultyConfig();
+        void fetch("/api/assignments")
+          .then((response) => response.ok ? response.json() : Promise.reject())
+          .then((data) => {
+            setAssignments(data.assignments);
+            if (data.assignments[0]) {
+              const a = data.assignments[0];
+              setAssignmentId(a.id);
+              setSubjectName(a.course);
+              // اسم الدكتور من التكليف نفسه
+              const doc = a.faculty?.facultyProfile;
+              if (doc) {
+                const title = doc.academicTitle ? doc.academicTitle + " " : "";
+                setDoctorName(title + (doc.fullName || "عضو هيئة التدريس"));
+              }
+            }
+          })
+          .catch(() => addRunLog("تعذر تحميل التكليفات المتاحة."));
+
+        addRunLog("تم فتح المحرر الأكاديمي الرقمي.");
+        loadNotifications(savedNId);
+      })
+      .catch(() => router.replace("/student/login"));
+    return () => { cancelled = true; };
+  }, [router]);
+
+  function loadFacultyConfig() {
+    const facultyConfig = JSON.parse(localStorage.getItem("earth_faculty_config") || "{}");
+    if (facultyConfig.doctorName && facultyConfig.subjectName) {
+      setDoctorName(facultyConfig.doctorName);
+      setSubjectName(facultyConfig.subjectName);
+      if (facultyConfig.minPages) setMinPages(facultyConfig.minPages);
+      if (facultyConfig.maxPages) setMaxPages(facultyConfig.maxPages);
     }
-    return () => clearInterval(timer);
-  }, [isSubmitted, timeLeft, submittedSuccessfully]);
+  }
 
-  const handleStartAssignment = (e: React.FormEvent) => {
+  function addRunLog(message: string) {
+    const time = new Date().toLocaleTimeString("ar-EG");
+    setRunLogs((prev) => [`[${time}] ${message}`, ...prev.slice(0, 15)]);
+  }
+
+  function loadNotifications(nId: string) {
+    try {
+      const savedReplies = JSON.parse(
+        localStorage.getItem(`earth_user_replies_${nId}`) || "[]"
+      );
+      if (Array.isArray(savedReplies)) {
+        setNotifications(savedReplies.reverse());
+      }
+    } catch {
+      setNotifications([]);
+    }
+  }
+
+  const handlePreventCopyPaste = (e: React.ClipboardEvent) => {
     e.preventDefault();
-    if (
-      !studentInfo.fullName.trim() ||
-      !studentInfo.nationalIdOrCard.trim() ||
-      !studentInfo.gradeYear.trim() ||
-      !studentInfo.department.trim()
-    ) {
-      alert("يرجى ملء جميع البيانات الأكاديمية المطلوبة بشكل صحيح قبل البدء.");
+    addRunLog("⚠️ تنبيه أمني: محاولة لصق/قص (تم الحظر لمنع الغش).");
+    alert("تنبيه أمني: حظر اللصق والقص مُفعل لضمان النزاهة الأكاديمية وصياغة البحث شخصياً.");
+  };
+
+  const handleOpenNotifications = () => {
+    setShowNotifModal(true);
+    if (!nationalId) return;
+
+    const updated = notifications.map((n) => ({ ...n, isRead: true }));
+    setNotifications(updated);
+    localStorage.setItem(`earth_user_replies_${nationalId}`, JSON.stringify(updated.reverse()));
+  };
+
+  const handleSaveDraft = () => {
+    setIsSaving(false);
+    alert("يتم حفظ التسليم النهائي فقط في قاعدة البيانات عند الاعتماد.");
+  };
+
+  const handleSubmitResearch = async () => {
+    if (!researchTitle.trim() || researchContent.trim().length < 50) {
+      alert("تنبيه أمني: يرجى كتابة عنوان البحث واستكمال محتوى لا يقل عن 50 حرفاً قبل الاعتماد النهائي.");
       return;
     }
-    setIsFormCompleted(true);
-  };
 
-  const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
-    e.preventDefault();
-    setPasteAttempts((prev) => prev + 1);
-  };
+    if (!confirm("هل أنت متأكد من تسليم البحث نهائياً؟ لن تتمكن من التعديل بعد الاعتماد.")) return;
 
-  const handleSubmit = () => {
-    if (wordCount < 10) {
-      alert("يرجى كتابة تحليل مكتمل قبل التسليم (10 كلمات على الأقل).");
+    if (!assignmentId) {
+      alert("لا يوجد تكليف منشور حالياً.");
+      return;
+    }
+    const response = await fetch(`/api/assignments/${assignmentId}/submissions`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: researchContent, defenseAnswer: researchTitle, pasteAttempts: 0 }),
+    });
+    const result = (await response.json().catch(() => ({}))) as { error?: string };
+    if (!response.ok) {
+      alert(result.error || "تعذر تسليم البحث.");
       return;
     }
     setIsSubmitted(true);
+    addRunLog("✅ تم اعتماد وتسليم البحث نهائياً.");
+    alert("تم اعتماد وتسليم بحثك الإلكتروني بنجاح في منظومة EARTH!");
   };
 
-  const handleFinalSubmit = async () => {
-    if (!defenseAnswer.trim()) {
-      alert("يرجى الإجابة على سؤال إثبات النزاهة.");
-      return;
-    }
-
-    try {
-      await fetch("/api/submissions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          studentName: studentInfo.fullName,
-          studentId: studentInfo.nationalIdOrCard,
-          gradeYear: studentInfo.gradeYear,
-          department: studentInfo.department,
-          nationality: studentInfo.nationality,
-          text,
-          pasteAttempts,
-          defenseAnswer,
-        }),
-      });
-      setSubmittedSuccessfully(true);
-    } catch (e) {
-      alert("حدث خطأ أثناء التسليم.");
-    }
+  const handleLogout = () => {
+    fetch("/api/auth/logout", { method: "POST" }).catch(() => undefined);
+    sessionStorage.clear();
+    router.replace("/student/login");
   };
+
+  const charCount = researchContent.length;
+  const wordCount = researchContent.trim() ? researchContent.trim().split(/\s+/).length : 0;
+  const estimatedPages = Math.max(1, Math.ceil(wordCount / 250));
+
+  const unreadCount = notifications.filter((n) => !n.isRead).length;
 
   return (
-    <main className="min-h-screen bg-gray-100 p-8 dir-rtl font-sans text-right">
-      <div className="max-w-3xl mx-auto mb-6 flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">بوابة الطالب - تقديم التكليفات</h1>
-          <p className="text-xs text-gray-600">منصة مَداوَلَة - بيئة الصياغة الآمنة</p>
-        </div>
-        <Link href="/" className="text-xs text-blue-600 hover:underline flex items-center gap-1">
-          <ArrowRight className="w-4 h-4" /> الخروج لصفحة الدخول
-        </Link>
-      </div>
+    <div className="h-screen w-screen overflow-hidden bg-gray-50 flex flex-col dir-rtl font-sans text-right text-gray-900">
 
-      {!isFormCompleted ? (
-        /* 1. نموذج استيفاء بيانات الطالب الرسمية */
-        <div className="max-w-2xl mx-auto p-6 bg-white rounded-xl shadow-md border border-gray-200">
-          <div className="flex items-center gap-2 mb-4 pb-3 border-b border-gray-100">
-            <UserCheck className="w-6 h-6 text-blue-600" />
-            <h2 className="text-lg font-bold text-gray-800">إستيفاء البيانات الأكاديمية للطالب</h2>
+      <header className="bg-[#1e5eb8] text-white px-6 py-3 flex items-center justify-between shadow-lg">
+        <div className="flex items-center gap-3">
+          <div className="w-11 h-11 bg-white/15 border border-white/20 rounded-2xl flex items-center justify-center">
+            <GraduationCap className="w-6 h-6 text-white" />
           </div>
-          <p className="text-xs text-gray-500 mb-6">
-            يرجى إدخال بياناتك الرسمية بدقة كما هي مسجلة بالكلية قبل فتح محرر صياغة البحث.
-          </p>
+          <div>
+            <h1 className="font-black text-lg flex items-center gap-2">
+              {studentName}
+              <span className="text-[10px] bg-white/15 border border-white/20 text-blue-100 px-2.5 py-0.5 rounded-full font-bold">
+                {targetYear} — {specialty}
+              </span>
+            </h1>
+            <p className="text-[11px] text-blue-100 mt-0.5 font-mono">الرقم القومي / الجواز: {nationalId}</p>
+          </div>
+        </div>
 
-          <form onSubmit={handleStartAssignment} className="space-y-4">
+        <div className="flex items-center gap-2.5">
+          <button
+            onClick={handleOpenNotifications}
+            className="relative bg-white/15 hover:bg-white/25 border border-white/20 text-white p-2.5 rounded-2xl transition"
+            title="تنبيهات الدعم الفني"
+          >
+            <Bell className="w-5 h-5" />
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-black w-4 h-4 rounded-full flex items-center justify-center animate-bounce">
+                {unreadCount}
+              </span>
+            )}
+          </button>
+
+          <button
+            onClick={handleLogout}
+            className="bg-red-600 hover:bg-red-700 text-white px-4 py-2.5 rounded-2xl text-xs font-bold transition flex items-center gap-2"
+          >
+            <LogOut className="w-4 h-4" /> خروج
+          </button>
+        </div>
+      </header>
+
+      <main className="flex-1 overflow-hidden p-4 grid grid-cols-12 gap-4 max-w-[1920px] w-full mx-auto">
+        <section className="col-span-12 bg-white p-4 rounded-3xl shadow-sm border border-gray-200 animate-fade-in-up">
+          <label className="block text-xs font-black text-[#1e5eb8] mb-2">التكليف المختار</label>
+          <select
+            value={assignmentId}
+            onChange={(event) => {
+              const selected = assignments.find((assignment) => assignment.id === event.target.value);
+              setAssignmentId(event.target.value);
+              if (selected) setSubjectName(selected.course);
+            }}
+            className="w-full p-3 rounded-xl border-2 border-gray-300 bg-gray-50 text-sm font-bold focus:border-[#1e5eb8] outline-none"
+            disabled={true}
+          >
+            {!assignments.length && <option value="">لا توجد تكليفات منشورة حالياً</option>}
+            {assignments.map((assignment) => {
+              const docName = assignment.faculty?.facultyProfile?.fullName || "عضو هيئة التدريس";
+              const docTitle = assignment.faculty?.facultyProfile?.academicTitle || "";
+              return (
+                <option key={assignment.id} value={assignment.id}>
+                  {assignment.course} — {docTitle} {docName}{assignment.deadline ? ` (آخر موعد: ${new Date(assignment.deadline).toLocaleString("ar-EG")})` : ""}
+                </option>
+              );
+            })}
+          </select>
+          {assignments.find((assignment) => assignment.id === assignmentId)?.description && (
+            <p className="mt-2 text-xs text-gray-600 whitespace-pre-wrap font-bold">
+              {assignments.find((assignment) => assignment.id === assignmentId)?.description}
+            </p>
+          )}
+        </section>
+
+        {/* 1. الإحصائيات الحية وأزرار المسودة والتسليم */}
+        <section className="col-span-3 space-y-4 overflow-y-auto animate-fade-in-up-delayed">
+          <div className="bg-white p-5 rounded-3xl shadow-sm border border-gray-200 space-y-4">
+            <h2 className="font-black text-sm text-gray-900 border-b-2 border-gray-100 pb-3 flex items-center gap-2">
+              <FileText className="w-4 h-4 text-[#1e5eb8]" /> إحصائيات البحث الحية
+            </h2>
+
+            <div className="space-y-2.5">
+              <div className="bg-blue-50 p-3.5 rounded-2xl border-2 border-blue-100 flex justify-between items-center">
+                <span className="text-[11px] font-bold text-[#1e5eb8]">الصفحات التقديرية</span>
+                <span className="text-xl font-black font-mono text-[#1e5eb8]">{estimatedPages} <span className="text-[10px] font-normal">صفحة</span></span>
+              </div>
+
+              <div className="bg-emerald-50 p-3.5 rounded-2xl border-2 border-emerald-100 flex justify-between items-center">
+                <span className="text-[11px] font-bold text-emerald-800">إجمالي الكلمات</span>
+                <span className="text-lg font-bold font-mono text-emerald-800">{wordCount}</span>
+              </div>
+
+              <div className="bg-purple-50 p-3.5 rounded-2xl border-2 border-purple-100 flex justify-between items-center">
+                <span className="text-[11px] font-bold text-purple-800">إجمالي الحروف</span>
+                <span className="text-lg font-bold font-mono text-purple-800">{charCount}</span>
+              </div>
+            </div>
+
+            {!isSubmitted ? (
+              <div className="space-y-2.5 pt-3 border-t-2 border-gray-100">
+                <button
+                  onClick={handleSaveDraft}
+                  disabled={isSaving}
+                  className="w-full bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold py-3.5 rounded-2xl text-xs transition flex items-center justify-center gap-2 border-2 border-gray-200"
+                >
+                  <Save className="w-4 h-4 text-gray-600" />
+                  {isSaving ? "جاري الحفظ..." : "حفظ مسودة"}
+                </button>
+
+                <button
+                  onClick={handleSubmitResearch}
+                  className="w-full bg-[#1e5eb8] hover:bg-[#1650a0] text-white font-black py-3.5 rounded-2xl text-sm transition shadow-lg shadow-blue-500/30 flex items-center justify-center gap-2"
+                >
+                  <Send className="w-4 h-4" /> اعتماد وتسليم البحث
+                </button>
+              </div>
+            ) : (
+              <div className="bg-emerald-50 border-2 border-emerald-200 text-emerald-900 p-4 rounded-2xl text-center text-xs font-black space-y-1.5">
+                <CheckCircle2 className="w-7 h-7 text-emerald-600 mx-auto" />
+                <span>تم التسليم بنجاح</span>
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* 2. المحرر */}
+        <section className="col-span-6 space-y-4 overflow-hidden flex flex-col animate-fade-in-up-delayed">
+          <div className="bg-white p-5 rounded-3xl shadow-sm border border-gray-200 space-y-4 flex-1 flex flex-col overflow-hidden">
+
+            <div className="flex items-center justify-between bg-gray-50 p-2.5 rounded-2xl border-2 border-gray-100 flex-wrap gap-2">
+              <span className="text-[11px] font-black text-gray-600">أدوات التنسيق:</span>
+
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 bg-white p-1 rounded-xl border-2 border-gray-200">
+                  <button
+                    type="button"
+                    onClick={() => setFontSize((prev) => Math.min(prev + 2, 32))}
+                    className="p-1.5 hover:bg-blue-50 text-gray-700 hover:text-[#1e5eb8] font-bold rounded-lg text-xs flex items-center gap-0.5 transition"
+                    title="تكبير الخط"
+                  >
+                    <Plus className="w-3.5 h-3.5" /> A
+                  </button>
+                  <span className="text-[11px] font-bold font-mono px-2 text-[#1e5eb8] border-x-2 border-gray-100">{fontSize}px</span>
+                  <button
+                    type="button"
+                    onClick={() => setFontSize((prev) => Math.max(prev - 2, 12))}
+                    className="p-1.5 hover:bg-blue-50 text-gray-700 hover:text-[#1e5eb8] font-bold rounded-lg text-xs flex items-center gap-0.5 transition"
+                    title="تصغير الخط"
+                  >
+                    <Minus className="w-3.5 h-3.5" /> A
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-1 bg-white p-1 rounded-xl border-2 border-gray-200">
+                  <button
+                    type="button"
+                    onClick={() => setIsBold(!isBold)}
+                    className={`p-2 rounded-lg transition ${isBold ? "bg-blue-100 text-[#1e5eb8]" : "hover:bg-gray-100 text-gray-700"}`}
+                    title="عريض"
+                  >
+                    <Bold className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsItalic(!isItalic)}
+                    className={`p-2 rounded-lg transition ${isItalic ? "bg-blue-100 text-[#1e5eb8]" : "hover:bg-gray-100 text-gray-700"}`}
+                    title="مائل"
+                  >
+                    <Italic className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsUnderline(!isUnderline)}
+                    className={`p-2 rounded-lg transition ${isUnderline ? "bg-blue-100 text-[#1e5eb8]" : "hover:bg-gray-100 text-gray-700"}`}
+                    title="تحته خط"
+                  >
+                    <Underline className="w-3.5 h-3.5" />
+                  </button>
+
+                  <div className="h-4 w-px bg-gray-300 mx-1" />
+
+                  <button
+                    type="button"
+                    onClick={() => setTextAlign("right")}
+                    className={`p-2 rounded-lg transition ${textAlign === "right" ? "bg-blue-100 text-[#1e5eb8]" : "hover:bg-gray-100 text-gray-700"}`}
+                  >
+                    <AlignRight className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTextAlign("center")}
+                    className={`p-2 rounded-lg transition ${textAlign === "center" ? "bg-blue-100 text-[#1e5eb8]" : "hover:bg-gray-100 text-gray-700"}`}
+                  >
+                    <AlignCenter className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTextAlign("left")}
+                    className={`p-2 rounded-lg transition ${textAlign === "left" ? "bg-blue-100 text-[#1e5eb8]" : "hover:bg-gray-100 text-gray-700"}`}
+                  >
+                    <AlignLeft className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            </div>
+
             <div>
-              <label className="block text-xs font-bold text-gray-700 mb-1">
-                الاسم بالكامل (كما هو مدون في الكارنيه أو البطاقة) *
-              </label>
+              <label className="block text-[11px] font-black text-gray-800 mb-1.5">* عنوان البحث المكلف به</label>
               <input
                 type="text"
-                required
-                value={studentInfo.fullName}
-                onChange={(e) => setStudentInfo({ ...studentInfo, fullName: e.target.value })}
-                placeholder="أدخل اسمك الرباعي الرسمى..."
-                className="w-full p-3 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-sm text-gray-900 bg-white placeholder-gray-400"
+                disabled={isSubmitted}
+                value={researchTitle}
+                onChange={(e) => {
+                  setResearchTitle(e.target.value);
+                  addRunLog("تحديث عنوان البحث.");
+                }}
+                placeholder="اكتب عنوان البحث الأكاديمي كاملاً هنا..."
+                className="w-full p-3.5 border-2 border-gray-300 rounded-2xl text-sm bg-gray-50 focus:bg-white focus:border-[#1e5eb8] outline-none font-bold text-gray-900 disabled:opacity-60 transition placeholder:text-gray-500 placeholder:font-bold"
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">
-                  رقم القيد / الرقم القومي *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={studentInfo.nationalIdOrCard}
-                  onChange={(e) => setStudentInfo({ ...studentInfo, nationalIdOrCard: e.target.value })}
-                  placeholder="مثال: 202410098"
-                  className="w-full p-3 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-sm text-gray-900 bg-white placeholder-gray-400"
-                />
-              </div>
+            <div className="flex-1 flex flex-col min-h-0">
+              <label className="block text-[11px] font-black text-gray-800 mb-1.5">* محتوى ونص البحث العلمي</label>
+              <textarea
+                disabled={isSubmitted}
+                value={researchContent}
+                onChange={(e) => setResearchContent(e.target.value)}
+                onPaste={handlePreventCopyPaste}
+                onCut={handlePreventCopyPaste}
+                placeholder="اكتب نص بحثك وتكليفك الأكاديمي بالتفصيل هنا..."
+                style={{
+                  fontSize: `${fontSize}px`,
+                  fontWeight: isBold ? "bold" : "normal",
+                  fontStyle: isItalic ? "italic" : "normal",
+                  textDecoration: isUnderline ? "underline" : "none",
+                  textAlign: textAlign,
+                }}
+                className="w-full flex-1 p-5 border-2 border-gray-300 rounded-2xl bg-gray-50 focus:bg-white focus:border-[#1e5eb8] outline-none leading-relaxed resize-none disabled:opacity-60 font-sans text-gray-900 transition placeholder:text-gray-500 placeholder:font-bold"
+              />
+            </div>
+          </div>
+        </section>
 
-              <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">الفرقة الدراسية *</label>
-                <select
-                  value={studentInfo.gradeYear}
-                  onChange={(e) => setStudentInfo({ ...studentInfo, gradeYear: e.target.value })}
-                  required
-                  className="w-full p-3 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-sm text-gray-900 bg-white"
-                >
-                  <option value="" className="text-gray-500">اختر الفرقة...</option>
-                  <option value="الفرقة الأولى" className="text-gray-900">الفرقة الأولى</option>
-                  <option value="الفرقة الثانية" className="text-gray-900">الفرقة الثانية</option>
-                  <option value="الفرقة الثالثة" className="text-gray-900">الفرقة الثالثة</option>
-                  <option value="الفرقة الرابعة" className="text-gray-900">الفرقة الرابعة</option>
-                  <option value="دراسات عليا" className="text-gray-900">دراسات عليا</option>
-                </select>
+        {/* 3. البيانات الأكاديمية + الإرشادات + RUN */}
+        <section className="col-span-3 space-y-4 overflow-y-auto animate-fade-in-up-delayed">
+
+          <div className="bg-white p-5 rounded-3xl shadow-sm border border-gray-200 space-y-3">
+            <h3 className="font-black text-xs text-gray-500 flex items-center gap-2 border-b-2 border-gray-100 pb-2">
+              <UserCheck className="w-4 h-4 text-[#1e5eb8]" /> البيانات الأكاديمية
+            </h3>
+
+            {doctorName && subjectName ? (
+              <div className="space-y-2.5 bg-blue-50/80 p-3.5 rounded-2xl border-2 border-blue-100">
+                <div>
+                  <span className="text-[10px] text-[#1e5eb8] font-black block">المادة المقررة:</span>
+                  <p className="text-sm font-extrabold text-gray-900">{subjectName}</p>
+                </div>
+
+                <div>
+                  <span className="text-[10px] text-[#1e5eb8] font-black block">أستاذ المادة:</span>
+                  <p className="text-sm font-extrabold text-gray-900">{doctorName}</p>
+                </div>
+
+                <div className="border-t-2 border-blue-200 pt-2 flex items-center justify-between text-xs font-bold">
+                  <span className="text-[#1e5eb8]">الحد المطلوب:</span>
+                  <span className="bg-[#1e5eb8] text-white px-2.5 py-0.5 rounded-md font-mono text-[11px]">
+                    {minPages} - {maxPages} صفحة
+                  </span>
+                </div>
               </div>
+            ) : (
+              <div className="bg-amber-50 border-2 border-amber-200 text-amber-900 p-3.5 rounded-2xl flex items-center gap-2 text-xs font-bold">
+                <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0" />
+                <span>ليس هناك مواد مسجلة بعد</span>
+              </div>
+            )}
+          </div>
+
+          <div className="bg-white p-5 rounded-3xl shadow-sm border border-gray-200 space-y-3">
+            <h3 className="font-black text-xs text-gray-700 flex items-center gap-2 border-b-2 border-gray-100 pb-2">
+              <BookOpen className="w-4 h-4 text-[#1e5eb8]" /> إرشادات مهمة
+            </h3>
+            <ul className="text-[11px] text-gray-600 space-y-1.5 list-disc list-inside leading-relaxed font-bold">
+              <li>التأكد من كتابة عنوان واضح ودقيق.</li>
+              <li>تقسيم البحث إلى مقدمة، مباحث، وخاتمة.</li>
+              <li>الالتزام بالصفحات ({minPages} إلى {maxPages}).</li>
+              <li>الالتزام بالأمانة العلمية.</li>
+              <li>إدراج قائمة المصادر والمراجع.</li>
+            </ul>
+          </div>
+
+          <div className="bg-gray-900 text-white p-5 rounded-3xl shadow-md border-2 border-gray-800 space-y-3">
+            <div className="flex justify-between items-center border-b-2 border-gray-800 pb-2">
+              <span className="text-[11px] font-black flex items-center gap-2 text-emerald-400 font-mono">
+                <Activity className="w-4 h-4 animate-pulse" /> RUN
+              </span>
+              <span className="text-[9px] bg-gray-800 text-gray-300 px-2 py-0.5 rounded font-mono">
+                {autoSaveStatus}
+              </span>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">التخصص / الشعبة *</label>
-                <input
-                  type="text"
-                  required
-                  value={studentInfo.department}
-                  onChange={(e) => setStudentInfo({ ...studentInfo, department: e.target.value })}
-                  placeholder="مثال: الشريعة والقانون / القانون العام"
-                  className="w-full p-3 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-sm text-gray-900 bg-white placeholder-gray-400"
-                />
+            <div className="space-y-1.5 font-mono text-[10px] text-gray-300 max-h-40 overflow-y-auto leading-relaxed pr-1">
+              {runLogs.map((log, i) => (
+                <div key={i} className="border-b border-gray-800/50 pb-1">{log}</div>
+              ))}
+            </div>
+          </div>
+        </section>
+      </main>
+
+      {showNotifModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-6 z-50">
+          <div className="bg-white max-w-lg w-full rounded-3xl p-7 shadow-2xl border-2 border-gray-200 space-y-5 relative">
+            <div className="flex justify-between items-center border-b-2 border-gray-100 pb-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-blue-100 text-[#1e5eb8] rounded-2xl flex items-center justify-center">
+                  <MessageSquare className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-black text-base text-gray-900">تنبيهات الدعم الفني</h3>
+                  <p className="text-[11px] text-gray-500 font-bold">الردود الموجهة من المبرمج</p>
+                </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">الجنسية *</label>
-                <input
-                  type="text"
-                  required
-                  value={studentInfo.nationality}
-                  onChange={(e) => setStudentInfo({ ...studentInfo, nationality: e.target.value })}
-                  placeholder="مثال: مصري / وافد"
-                  className="w-full p-3 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-sm text-gray-900 bg-white placeholder-gray-400"
-                />
-              </div>
+              <button
+                onClick={() => setShowNotifModal(false)}
+                className="text-gray-400 hover:text-gray-600 p-2 rounded-xl transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
+              {notifications.length > 0 ? (
+                notifications.map((notif) => (
+                  <div key={notif.id} className="bg-blue-50/60 p-4 rounded-2xl border-2 border-blue-200 space-y-2.5">
+                    <div>
+                      <span className="text-[10px] font-black text-[#1e5eb8] bg-blue-100 px-2.5 py-0.5 rounded-md">
+                        استفسارك السابق:
+                      </span>
+                      <p className="text-xs text-gray-700 mt-1 italic font-bold">&quot;{notif.originalMsg}&quot;</p>
+                    </div>
+
+                    <div className="border-t-2 border-blue-200/80 pt-2">
+                      <span className="text-[10px] font-black text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded-md flex items-center gap-1 w-fit mb-1">
+                        <ShieldCheck className="w-3 h-3 text-emerald-600" /> رد المبرمج ({notif.repliedAt}):
+                      </span>
+                      <p className="text-sm font-bold text-gray-900 leading-relaxed">{notif.reply}</p>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-10 text-gray-400 space-y-2">
+                  <Bell className="w-12 h-12 mx-auto opacity-30" />
+                  <p className="text-sm font-bold">لا توجد رسائل واردة حالياً.</p>
+                </div>
+              )}
             </div>
 
             <button
-              type="submit"
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition mt-4"
+              onClick={() => setShowNotifModal(false)}
+              className="w-full bg-[#1e5eb8] text-white font-black py-3.5 rounded-2xl text-sm hover:bg-[#1650a0] transition"
             >
-              تأكيد البيانات والدخول لمحرر البحث
+              إغلاق
             </button>
-          </form>
-        </div>
-      ) : (
-        /* 2. محرر الكتابة التفاعلي */
-        <div className="max-w-3xl mx-auto p-6 bg-white rounded-xl shadow-md border border-gray-200">
-          <div className="flex justify-between items-center mb-4 pb-3 border-b border-gray-100">
-            <div>
-              <h2 className="text-xl font-bold text-gray-800">محرر صياغة التحليل والنصوص</h2>
-              <p className="text-xs text-gray-500 mt-1">
-                الطالب: <strong className="text-gray-800">{studentInfo.fullName}</strong> | {studentInfo.gradeYear} ({studentInfo.department})
-              </p>
-            </div>
-            <span className="bg-blue-50 text-blue-700 text-xs font-semibold px-3 py-1 rounded-full border border-blue-200 flex items-center gap-1">
-              <CheckCircle2 className="w-3.5 h-3.5" /> نظام النزاهة مفعل
-            </span>
           </div>
-
-          {!isSubmitted ? (
-            <>
-              {pasteAttempts > 0 && (
-                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700 text-sm">
-                  <AlertTriangle className="w-5 h-5 flex-shrink-0" />
-                  <span>
-                    تنبيه ({pasteAttempts}): تم محظر لصق النصوص الخارجية لضمان النزاهة وكتابة الإجابة بجهدك الذاتي.
-                  </span>
-                </div>
-              )}
-
-              <textarea
-                value={text}
-                onChange={(e) => setText(e.target.value)}
-                onPaste={handlePaste}
-                rows={10}
-                placeholder="اكتب التحليل الخاص بك هنا بخط يدك... (النسخ واللصق محظور تماماً)"
-                className="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none text-gray-900 bg-white placeholder-gray-400 text-lg leading-relaxed"
-              />
-
-              <div className="mt-4 flex justify-between items-center text-sm text-gray-600 pt-2 border-t border-gray-50">
-                <div>
-                  <span>عدد الكلمات: <strong className="text-gray-900 font-bold">{wordCount}</strong></span>
-                </div>
-                <button
-                  onClick={handleSubmit}
-                  className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-2 rounded-lg flex items-center gap-2 transition"
-                >
-                  <Send className="w-4 h-4" /> تسليم التكليف
-                </button>
-              </div>
-            </>
-          ) : !submittedSuccessfully ? (
-            <div className="bg-amber-50 p-6 rounded-lg border border-amber-200">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-bold text-amber-900 flex items-center gap-2">
-                  <AlertTriangle className="text-amber-600" /> مرحلة إثبات الفهم والنزاهة الأكاديمية
-                </h3>
-                <div className="flex items-center gap-1 text-red-600 font-mono font-bold bg-white px-3 py-1 rounded border border-red-200">
-                  <Timer className="w-4 h-4 animate-pulse" /> {timeLeft} ثانية
-                </div>
-              </div>
-
-              <p className="text-gray-800 mb-3 font-medium">
-                سؤال مباشر على تحليلكم: <strong>"ما السند الأكاديمي أو القاعدة الرئيسية التي اعتمدت عليها في استنتاجك المكتوب؟"</strong>
-              </p>
-
-              <input
-                type="text"
-                value={defenseAnswer}
-                onChange={(e) => setDefenseAnswer(e.target.value)}
-                placeholder="اكتب إجابة سريعة وموجزة لتأكيد فهمك..."
-                className="w-full p-3 border border-amber-300 rounded-lg outline-none focus:ring-2 focus:ring-amber-500 mb-4 bg-white text-gray-900 placeholder-gray-400"
-              />
-
-              <button
-                onClick={handleFinalSubmit}
-                className="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-2.5 rounded-lg transition"
-              >
-                تأكيد وإرسال النهائي
-              </button>
-            </div>
-          ) : (
-            <div className="text-center py-8">
-              <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto mb-3" />
-              <h3 className="text-2xl font-bold text-gray-800 mb-1">تم تسليم التكليف بنجاح!</h3>
-              <p className="text-gray-600">تم تسجيل بصمة الكتابة وإرسال التكليف وبياناتك الرسمية إلى لوحة تحكم الدكتور.</p>
-            </div>
-          )}
         </div>
       )}
-    </main>
+
+      <style jsx global>{`
+        @keyframes fadeInUp {
+          from { opacity: 0; transform: translateY(12px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in-up { animation: fadeInUp 0.4s ease-out forwards; }
+        .animate-fade-in-up-delayed { animation: fadeInUp 0.5s ease-out 0.1s both; }
+      `}</style>
+    </div>
   );
 }

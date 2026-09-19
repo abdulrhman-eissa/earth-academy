@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { User, CheckCircle2, AlertTriangle, Clock, ShieldCheck, FileText } from "lucide-react";
+import { User, AlertTriangle, Clock, ShieldCheck, FileText } from "lucide-react";
 
 export default function FacultyDashboard() {
   // بيانات تجريبية للتكليفات المستلمة من الطلاب
