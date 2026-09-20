@@ -172,6 +172,8 @@ model Submission {
   studentProfileId String?
   studentProfile   StudentProfile?  @relation(fields: [studentProfileId], references: [id], onDelete: SetNull)
   text             String
+  htmlContent      String?
+  pdfUrl           String?
   defenseAnswer    String?
   pasteAttempts    Int              @default(0)
   integrityScore   Int?

@@ -15,6 +15,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
   }
   const input = body as Record<string, unknown>;
   const text = typeof input.text === "string" ? input.text.trim() : "";
+  const htmlContent = typeof input.htmlContent === "string" ? input.htmlContent : null;
   const defenseAnswer = typeof input.defenseAnswer === "string" ? input.defenseAnswer.trim() : null;
   const pasteAttempts = typeof input.pasteAttempts === "number" ? input.pasteAttempts : 0;
 
@@ -36,17 +37,10 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
   });
 
   if (!profile?.chosenAssignmentId) {
-    return NextResponse.json(
-      { error: "يجب اختيار تكليف أولاً قبل التسليم" },
-      { status: 403 }
-    );
+    return NextResponse.json({ error: "يجب اختيار تكليف أولاً قبل التسليم" }, { status: 403 });
   }
-
   if (profile.chosenAssignmentId !== assignmentId) {
-    return NextResponse.json(
-      { error: "لا يمكنك التسليم لتكليف غير الذي اخترته" },
-      { status: 403 }
-    );
+    return NextResponse.json({ error: "لا يمكنك التسليم لتكليف غير الذي اخترته" }, { status: 403 });
   }
 
   const existing = await prisma.submission.findUnique({
@@ -59,12 +53,20 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
 
   const submission = await prisma.submission.upsert({
     where: { assignmentId_studentId: { assignmentId, studentId: auth.session.userId } },
-    update: { text, defenseAnswer, pasteAttempts, status: "SUBMITTED", submittedAt: new Date() },
+    update: {
+      text,
+      htmlContent,
+      defenseAnswer,
+      pasteAttempts,
+      status: "SUBMITTED",
+      submittedAt: new Date(),
+    },
     create: {
       assignmentId,
       studentId: auth.session.userId,
       studentProfileId: profile.id,
       text,
+      htmlContent,
       defenseAnswer,
       pasteAttempts,
       status: "SUBMITTED",
@@ -72,7 +74,6 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     select: { id: true, status: true, submittedAt: true },
   });
 
-  // إشعار للأستاذ
   await notify({
     userId: assignment.facultyId,
     type: "RESEARCH_SUBMITTED",
@@ -81,7 +82,6 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     relatedId: submission.id,
   });
 
-  // Audit log
   await audit({
     actorId: auth.session.userId,
     actorEmail: profile.studentCode,
@@ -94,4 +94,25 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
   });
 
   return NextResponse.json({ submission }, { status: 201 });
+}
+
+export async function GET(_request: Request, context: { params: Promise<{ id: string }> }) {
+  const auth = await requireRole("STUDENT");
+  if ("error" in auth) return auth.error;
+
+  const { id: assignmentId } = await context.params;
+
+  const submission = await prisma.submission.findUnique({
+    where: { assignmentId_studentId: { assignmentId, studentId: auth.session.userId } },
+    select: {
+      id: true,
+      text: true,
+      htmlContent: true,
+      defenseAnswer: true,
+      status: true,
+      submittedAt: true,
+    },
+  });
+
+  return NextResponse.json({ submission });
 }

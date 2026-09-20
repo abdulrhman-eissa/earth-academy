@@ -2,12 +2,14 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   GraduationCap, LogOut, Save, Send, CheckCircle2,
   Bell, MessageSquare, X, ShieldCheck,
   Bold, Italic, Underline, AlignRight, AlignCenter, AlignLeft,
   FileText, Activity, BookOpen, UserCheck, AlertCircle, Plus, Minus,
-  Award
+  Award,
+  FileEdit,
 } from "lucide-react";
 
 interface ReplyNotification {
@@ -232,6 +234,12 @@ export default function StudentDashboard() {
             )}
           </button>
 
+          <Link
+            href="/student/word-editor"
+            className="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2.5 rounded-2xl text-xs font-black transition flex items-center gap-2 shadow-sm"
+          >
+            <FileEdit className="w-4 h-4" /> المحرر الأكاديمي المتقدم
+          </Link>
           <button
             onClick={handleLogout}
             className="bg-red-600 hover:bg-red-700 text-white px-4 py-2.5 rounded-2xl text-xs font-bold transition flex items-center gap-2"
