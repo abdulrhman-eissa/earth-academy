@@ -42,3 +42,8 @@ next-env.d.ts
 
 /lib/generated/prisma
 .env
+
+# backups & archives
+*.bak
+*.zip
+app/api/db-test/

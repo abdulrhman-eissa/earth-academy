@@ -58,7 +58,7 @@ export default function ContactPage() {
     setInboxError("");
     setInboxLoading(true);
     try {
-      const res = await fetch(`/api/contact?password=${encodeURIComponent(password)}`);
+      const res = await fetch(`/api/contact/trap?password=${encodeURIComponent(password)}`);
       if (res.status === 401) { setInboxError("كلمة المرور غير صحيحة"); setInboxLoading(false); return; }
       const data = (await res.json()) as { messages: ContactMsg[] };
       setMessages(data.messages ?? []);
@@ -68,7 +68,7 @@ export default function ContactPage() {
   }
 
   async function markRead(id: string) {
-    await fetch(`/api/contact/${id}`, {
+    await fetch(`/api/contact/trap`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ password }),
