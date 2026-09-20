@@ -89,7 +89,7 @@ export async function gatherThreatIntel(request: Request): Promise<ThreatIntel> 
 
   // ✅ الأولوية: Vercel headers (دقيقة جداً ومجانية)
   const vCountry = request.headers.get("x-vercel-ip-country");
-  const vCity = decodeURIComponent(request.headers.get("x-vercel-ip-city") ?? "");
+  const vCity = request.headers.get("x-vercel-ip-city") ?? "";
   const vRegion = request.headers.get("x-vercel-ip-country-region");
 
   let country: string | null = null;
