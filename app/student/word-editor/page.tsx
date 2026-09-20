@@ -137,10 +137,23 @@ export default function WordEditorPage() {
   }, [router]);
 
   async function handleSaveDraft() {
-    if (!assignment) return;
+    console.log("=== SAVE DRAFT START ===");
+    console.log("assignment:", assignment);
+    console.log("title:", title);
+    console.log("htmlContent length:", htmlContent.length);
+    
+    if (!assignment) {
+      console.log("❌ assignment is null/undefined");
+      setError("لم يتم تحميل التكليف. يرجى تحديث الصفحة.");
+      return;
+    }
+    
     setSaving(true);
     setError("");
+    
     const plainText = htmlContent.replace(/<[^>]+>/g, "").trim();
+    console.log("plainText length:", plainText.length);
+    console.log("POST URL:", `/api/assignments/${assignment.id}/submissions`);
 
     const newActivity: ActivityEntry[] = [
       { at: new Date().toISOString(), type: "SAVE_DRAFT", details: `حفظ مسودة (${stats.words} كلمة)` },
@@ -160,17 +173,30 @@ export default function WordEditorPage() {
           activityLog: newActivity,
         }),
       });
+      
+      console.log("RESPONSE STATUS:", res.status);
+      const responseText = await res.text();
+      console.log("RESPONSE BODY:", responseText);
+      
       if (!res.ok) {
-        const d = await res.json().catch(() => ({}));
-        setError((d as { error?: string }).error || "تعذر الحفظ");
+        let errorMsg = "تعذر الحفظ";
+        try {
+          const parsed = JSON.parse(responseText);
+          errorMsg = parsed.error || errorMsg;
+        } catch {}
+        console.log("❌ Error:", errorMsg);
+        setError(errorMsg);
       } else {
+        console.log("✅ Save successful");
         setActivityLog(newActivity);
         setLastSaveText(`آخر حفظ: ${new Date().toLocaleTimeString("ar-EG")}`);
       }
-    } catch {
+    } catch (err) {
+      console.log("❌ EXCEPTION:", err);
       setError("تعذر الاتصال بالخادم");
     } finally {
       setSaving(false);
+      console.log("=== SAVE DRAFT END ===");
     }
   }
 
