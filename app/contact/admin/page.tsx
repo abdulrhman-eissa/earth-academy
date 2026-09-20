@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import {
-  Crown, Users, UserCheck, Building2, BookOpen, FileText,
+  Crown, Users, UserCheck, Building2, BookOpen, FileText, ShieldAlert,
   Award, TrendingUp, Clock, LogOut, Trash2,
   Loader2, Search, CheckCircle2, Eye, X, AlertCircle,
   BarChart3, Inbox, Hash, RefreshCw, ChevronLeft, ChevronRight,
@@ -54,7 +54,7 @@ interface AuditRow {
   createdAt: string;
 }
 
-type Tab = "overview" | "users" | "submissions" | "messages" | "audit";
+type Tab = "overview" | "users" | "submissions" | "messages" | "threats" | "audit";
 
 const ROLE_LABELS: Record<string, string> = { STUDENT: "طالب", FACULTY: "أستاذ", AFFAIRS: "شؤون", ADMIN: "مبرمج" };
 const STATUS_LABELS: Record<string, string> = { ACTIVE: "نشط", SUSPENDED: "موقوف", INACTIVE: "غير نشط" };
@@ -65,6 +65,7 @@ const NAV_ITEMS: Array<{ id: Tab; label: string; icon: typeof BarChart3 }> = [
   { id: "users", label: "المستخدمون", icon: Users },
   { id: "submissions", label: "التسليمات", icon: FileText },
   { id: "messages", label: "الرسائل", icon: Inbox },
+  { id: "threats", label: "محاولات التسلل", icon: ShieldAlert },
   { id: "audit", label: "سجل العمليات", icon: ScrollText },
 ];
 
@@ -93,6 +94,8 @@ export default function AdminDashboard() {
   const [auditActions, setAuditActions] = useState<Array<{ action: string; count: number }>>([]);
   const [auditFilter, setAuditFilter] = useState("ALL");
   const [auditLoading, setAuditLoading] = useState(false);
+  const [threats, setThreats] = useState<AuditRow[]>([]);
+  const [threatsLoading, setThreatsLoading] = useState(false);
 
   async function loadAll() {
     setLoading(true);
@@ -100,7 +103,7 @@ export default function AdminDashboard() {
       fetch("/api/admin/stats").then((r) => r.ok ? r.json() : null).catch(() => null),
       fetch("/api/admin/users").then((r) => r.ok ? r.json() : { users: [] }).catch(() => ({ users: [] })),
       fetch("/api/admin/submissions").then((r) => r.ok ? r.json() : { submissions: [] }).catch(() => ({ submissions: [] })),
-      fetch("/api/contact?password=EarthDev@2026").then((r) => r.ok ? r.json() : { messages: [] }).catch(() => ({ messages: [] })),
+      fetch("/api/admin/messages").then((r) => r.ok ? r.json() : { messages: [] }).catch(() => ({ messages: [] })),
     ]);
     setStats(s); setUsers(u.users ?? []); setSubmissions(sub.submissions ?? []); setMessages(m.messages ?? []);
     setLoading(false);
@@ -136,6 +139,17 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (tab === "audit") void loadAuditLogs();
   }, [tab, auditFilter]);
+
+  async function loadThreats() {
+    setThreatsLoading(true);
+    const res = await fetch("/api/admin/audit?action=SECURITY_THREAT").then((r) => r.ok ? r.json() : { logs: [] }).catch(() => ({ logs: [] }));
+    setThreats(res.logs ?? []);
+    setThreatsLoading(false);
+  }
+
+  useEffect(() => {
+    if (tab === "threats") void loadThreats();
+  }, [tab]);
 
   async function handleDelete(id: string) {
     setActionLoading(true);
@@ -844,6 +858,192 @@ export default function AdminDashboard() {
                       </p>
                     </div>
                   ))}
+                </div>
+              )}
+
+              {/* THREATS */}
+              {tab === "threats" && (
+                <div className="p-8 space-y-5 max-w-[1200px] mx-auto animate-fadeIn">
+                  <div className="flex items-center justify-between flex-wrap gap-3">
+                    <div>
+                      <h1 className="text-3xl font-black text-white flex items-center gap-3">
+                        <ShieldAlert className="w-8 h-8 text-red-400" />
+                        محاولات التسلل
+                      </h1>
+                      <p className="text-sm font-bold mt-1" style={{ color: "rgba(196,181,253,0.95)" }}>
+                        محاولات الوصول غير المصرّح بها — يتم تسجيلها تلقائياً
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => loadThreats()}
+                      disabled={threatsLoading}
+                      className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black transition disabled:opacity-50"
+                      style={{ background: "rgba(255,255,255,0.06)", color: "white", border: "1px solid rgba(124,58,237,0.3)" }}
+                    >
+                      <RefreshCw className={"w-4 h-4 " + (threatsLoading ? "animate-spin" : "")} />
+                      تحديث
+                    </button>
+                  </div>
+
+                  <div className="rounded-2xl p-5 flex items-start gap-4" style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)" }}>
+                    <ShieldAlert className="w-6 h-6 text-red-400 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-black text-red-300 text-sm">نظام الحماية يعمل</p>
+                      <p className="text-xs font-bold mt-1" style={{ color: "rgba(254,202,202,0.9)" }}>
+                        صندوق الرسائل الوهمي في ترس التواصل يعمل كفخ (Honeypot). كل محاولة تُسجَّل مع IP والوقت وكلمة المرور المُستخدمة.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="rounded-[24px] overflow-hidden" style={{ background: "#221540", border: "1px solid rgba(239,68,68,0.3)" }}>
+                    <table className="w-full text-right text-sm">
+                      <thead>
+                        <tr className="text-[11px] font-black" style={{ color: "rgba(254,202,202,0.9)", background: "rgba(239,68,68,0.15)" }}>
+                          <th className="px-6 py-4 text-right">النوع</th>
+                          <th className="px-6 py-4 text-right">التفاصيل</th>
+                          <th className="px-6 py-4 text-right">IP</th>
+                          <th className="px-6 py-4 text-right">المتصفح</th>
+                          <th className="px-6 py-4 text-right">الوقت</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {threatsLoading ? (
+                          <tr><td colSpan={5} className="p-16 text-center">
+                            <Loader2 className="w-8 h-8 mx-auto animate-spin" style={{ color: "#a855f7" }} />
+                          </td></tr>
+                        ) : threats.length === 0 ? (
+                          <tr><td colSpan={5} className="p-16 text-center">
+                            <ShieldAlert className="w-14 h-14 mx-auto mb-3" style={{ color: "rgba(196,181,253,0.3)" }} />
+                            <p className="text-sm font-bold" style={{ color: "rgba(196,181,253,0.7)" }}>لا توجد محاولات تسلل</p>
+                            <p className="text-[11px] font-bold mt-1" style={{ color: "rgba(196,181,253,0.5)" }}>النظام آمن</p>
+                          </td></tr>
+                        ) : threats.map((t) => (
+                          <tr key={t.id} style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+                            <td className="px-6 py-4">
+                              <span className="text-[10px] font-black px-2.5 py-1 rounded-md inline-flex items-center gap-1" style={{ background: "rgba(239,68,68,0.2)", color: "#fca5a5" }}>
+                                <ShieldAlert className="w-3 h-3" /> اختراق
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 text-xs font-bold" style={{ color: "rgba(254,202,202,0.95)" }}>
+                              {t.details ?? "—"}
+                            </td>
+                            <td className="px-6 py-4 font-mono text-[10px] font-bold" style={{ color: "rgba(196,181,253,0.85)" }}>
+                              {t.ip ?? "—"}
+                            </td>
+                            <td className="px-6 py-4 text-[10px]" style={{ color: "rgba(196,181,253,0.6)", maxWidth: "180px" }}>
+                              <span className="block truncate" title={t.userAgent ?? ""}>
+                                {t.userAgent ? t.userAgent.slice(0, 35) + "..." : "—"}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 text-[11px] font-mono font-bold" style={{ color: "rgba(196,181,253,0.9)" }}>
+                              {new Date(t.createdAt).toLocaleString("ar-EG")}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* AUDIT LOG */}
+              {tab === "audit" && (
+                <div className="p-8 space-y-5 max-w-[1500px] mx-auto animate-fadeIn">
+                  <div className="flex items-center justify-between flex-wrap gap-3">
+                    <div>
+                      <h1 className="text-3xl font-black text-white flex items-center gap-3">
+                        <ScrollText className="w-8 h-8" style={{ color: "#a855f7" }} />
+                        سجل العمليات
+                      </h1>
+                      <p className="text-sm font-bold mt-1" style={{ color: "rgba(196,181,253,0.95)" }}>
+                        توثيق كامل لجميع العمليات الحساسة
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => loadAuditLogs()}
+                      disabled={auditLoading}
+                      className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black transition disabled:opacity-50"
+                      style={{ background: "rgba(255,255,255,0.06)", color: "white", border: "1px solid rgba(124,58,237,0.3)" }}
+                    >
+                      <RefreshCw className={"w-4 h-4 " + (auditLoading ? "animate-spin" : "")} />
+                      تحديث
+                    </button>
+                  </div>
+
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <button
+                      onClick={() => setAuditFilter("ALL")}
+                      className="px-4 py-2 rounded-xl text-xs font-black transition"
+                      style={{
+                        background: auditFilter === "ALL" ? "linear-gradient(135deg, #7c3aed, #a855f7)" : "rgba(255,255,255,0.05)",
+                        color: "white",
+                        border: "1px solid rgba(124,58,237,0.3)",
+                      }}
+                    >
+                      الكل ({auditLogs.length})
+                    </button>
+                    {auditActions.map((a) => (
+                      <button
+                        key={a.action}
+                        onClick={() => setAuditFilter(a.action)}
+                        className="px-4 py-2 rounded-xl text-xs font-black transition"
+                        style={{
+                          background: auditFilter === a.action ? "linear-gradient(135deg, #7c3aed, #a855f7)" : "rgba(255,255,255,0.05)",
+                          color: "white",
+                          border: "1px solid rgba(124,58,237,0.3)",
+                        }}
+                      >
+                        {a.action} ({a.count})
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="rounded-[24px] overflow-hidden" style={{ background: "#221540", border: "1px solid rgba(124,58,237,0.35)" }}>
+                    <table className="w-full text-right text-sm">
+                      <thead>
+                        <tr className="text-[11px] font-black" style={{ color: "rgba(196,181,253,0.85)", background: "rgba(124,58,237,0.08)" }}>
+                          <th className="px-6 py-4 text-right">العملية</th>
+                          <th className="px-6 py-4 text-right">المستخدم</th>
+                          <th className="px-6 py-4 text-right">التفاصيل</th>
+                          <th className="px-6 py-4 text-right">IP</th>
+                          <th className="px-6 py-4 text-right">التاريخ</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {auditLoading ? (
+                          <tr><td colSpan={5} className="p-16 text-center">
+                            <Loader2 className="w-8 h-8 mx-auto animate-spin" style={{ color: "#a855f7" }} />
+                          </td></tr>
+                        ) : auditLogs.length === 0 ? (
+                          <tr><td colSpan={5} className="p-16 text-center">
+                            <ScrollText className="w-14 h-14 mx-auto mb-3" style={{ color: "rgba(196,181,253,0.4)" }} />
+                            <p className="text-sm font-bold" style={{ color: "rgba(196,181,253,0.75)" }}>لا توجد عمليات مسجّلة</p>
+                          </td></tr>
+                        ) : auditLogs.map((log) => (
+                          <tr key={log.id} style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+                            <td className="px-6 py-4">
+                              <span className="text-[10px] font-black px-2.5 py-1 rounded-md" style={{ background: "rgba(124,58,237,0.2)", color: "#d8b4fe" }}>
+                                {log.action}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4">
+                              <p className="text-xs font-black text-white">{log.actorEmail ?? "—"}</p>
+                              <p className="text-[10px] font-bold mt-0.5" style={{ color: "rgba(196,181,253,0.75)" }}>{log.actorRole ?? "—"}</p>
+                            </td>
+                            <td className="px-6 py-4 text-xs font-bold" style={{ color: "rgba(196,181,253,0.95)" }}>
+                              {log.details ?? "—"}
+                            </td>
+                            <td className="px-6 py-4 font-mono text-[10px] font-bold" style={{ color: "rgba(196,181,253,0.7)" }}>
+                              {log.ip ?? "—"}
+                            </td>
+                            <td className="px-6 py-4 text-[11px] font-mono font-bold" style={{ color: "rgba(196,181,253,0.85)" }}>
+                              {new Date(log.createdAt).toLocaleString("ar-EG")}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               )}
             </>
