@@ -227,6 +227,16 @@ model AuditLog {
   details     String?
   ip          String?
   userAgent   String?
+  browser     String?
+  os          String?
+  device      String?
+  country     String?
+  city        String?
+  region      String?
+  isp         String?
+  referer     String?
+  language    String?
+  attemptCount Int      @default(1)
   createdAt   DateTime @default(now())
 
   @@index([actorId])
