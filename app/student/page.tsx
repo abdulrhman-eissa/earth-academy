@@ -7,6 +7,7 @@ import {
   GraduationCap, LogOut, FileText, BookOpen, User, Clock,
   CheckCircle2, AlertCircle, Loader2, Award, ArrowRight,
   FileEdit, Eye, ShieldCheck, Calendar, TrendingUp,
+  KeyRound,
 } from "lucide-react";
 import NotificationBell from "@/components/NotificationBell";
 
@@ -171,6 +172,13 @@ export default function StudentDashboard() {
 
         <div className="flex items-center gap-2.5">
           <NotificationBell variant="dark" />
+          <Link
+            href="/change-password"
+            className="bg-white/15 hover:bg-white/25 border border-white/20 text-white p-2.5 rounded-2xl transition flex items-center justify-center"
+            title="تغيير كلمة المرور"
+          >
+            <KeyRound className="w-4 h-4" />
+          </Link>
           <button
             onClick={handleLogout}
             className="bg-red-600 hover:bg-red-700 text-white px-4 py-2.5 rounded-2xl text-xs font-bold transition flex items-center gap-2"

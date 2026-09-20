@@ -6,6 +6,7 @@ import {
   Building2, Users, GraduationCap, BookOpen, Award,
   TrendingUp, Clock, LogOut, Printer, Download, ArrowRight,
   Loader2, BarChart3, CheckCircle2,
+  KeyRound,
 } from "lucide-react";
 import NotificationBell from "@/components/NotificationBell";
 import Link from "next/link";
@@ -84,6 +85,13 @@ export default function AffairsDashboard() {
         </div>
         <div className="flex items-center gap-3">
           <NotificationBell variant="dark" />
+          <Link
+            href="/change-password"
+            className="bg-white/15 hover:bg-white/25 border border-white/20 text-white p-2.5 rounded-2xl transition flex items-center justify-center"
+            title="تغيير كلمة المرور"
+          >
+            <KeyRound className="w-4 h-4" />
+          </Link>
           <Link
             href="/affairs/grades"
             className="bg-[#1e5eb8] hover:bg-[#1e5eb8] text-white px-5 py-3 rounded-2xl text-sm font-bold flex items-center gap-2 transition"

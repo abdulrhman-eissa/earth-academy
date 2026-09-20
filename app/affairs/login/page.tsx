@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Building2, ArrowRight, ShieldAlert, LogIn, Mail, Lock, GraduationCap, CheckCircle2, BarChart3, Users } from "lucide-react";
+import { Building2, ArrowRight, ShieldAlert, LogIn, Mail, Lock, GraduationCap, CheckCircle2, BarChart3, Users, Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 import { sanitizeInput, detectMaliciousPattern, checkRateLimit } from "@/lib/security";
 
@@ -10,6 +10,7 @@ export default function AffairsLoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -152,7 +153,6 @@ export default function AffairsLoginPage() {
                   <input
                     type="email" required value={email}
                     onChange={(e) => { setEmail(e.target.value); setErrorMessage(""); }}
-                    placeholder="مثال: affairs@earth.edu"
                     className="w-full p-4 pr-11 border-2 border-gray-300 rounded-xl text-sm bg-gray-50 outline-none font-bold focus:border-[#1e5eb8] focus:bg-white transition placeholder:text-gray-700 placeholder:font-bold"
                   />
                   <Mail className="w-4 h-4 text-gray-400 absolute right-4 top-4" />
@@ -163,12 +163,21 @@ export default function AffairsLoginPage() {
                 <label className="block text-[11px] font-black text-gray-700 mb-1.5">كلمة المرور *</label>
                 <div className="relative">
                   <input
-                    type="password" required minLength={8} value={password}
+                    type={showPassword ? "text" : "password"}
+                    required
+                    value={password}
                     onChange={(e) => { setPassword(e.target.value); setErrorMessage(""); }}
-                    placeholder="أدخل كلمة المرور..."
-                    className="w-full p-4 pr-11 border-2 border-gray-300 rounded-xl text-sm bg-gray-50 outline-none font-mono font-bold focus:border-[#1e5eb8] focus:bg-white transition placeholder:text-gray-700 placeholder:font-bold"
+                    className="w-full p-4 pl-11 pr-11 border-2 border-gray-300 rounded-xl text-sm bg-gray-50 outline-none font-mono font-bold focus:border-[#1e5eb8] focus:bg-white transition placeholder:text-gray-700 placeholder:font-bold"
                   />
                   <Lock className="w-4 h-4 text-gray-400 absolute right-4 top-4" />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute left-4 top-4 text-gray-400 hover:text-[#1e5eb8] transition"
+                    title={showPassword ? "إخفاء" : "إظهار"}
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
                 </div>
               </div>
 

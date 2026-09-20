@@ -326,7 +326,6 @@ export default function WordEditorPage() {
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             disabled={isSubmitted}
-            placeholder="اكتب عنوان البحث هنا..."
             className="w-full p-3.5 border-2 border-gray-300 rounded-xl text-base font-bold bg-gray-50 outline-none focus:border-[#1e5eb8] focus:bg-white transition disabled:opacity-60"
           />
         </div>

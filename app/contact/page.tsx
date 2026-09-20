@@ -224,7 +224,6 @@ export default function ContactPage() {
                   <input
                     type="text" required value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
-                    placeholder="أدخل اسمك الكامل هنا..."
                     className="w-full p-3.5 pr-11 border-2 border-gray-300 rounded-xl text-sm bg-gray-50 outline-none font-bold focus:border-[#1e5eb8] focus:bg-white transition placeholder:text-gray-700 placeholder:font-bold"
                   />
                   <User className="w-4 h-4 text-gray-400 absolute right-4 top-4" />
@@ -238,7 +237,6 @@ export default function ContactPage() {
                     <input
                       type="tel" required value={phone}
                       onChange={(e) => setPhone(e.target.value)}
-                      placeholder="مثال: 01012345678"
                       className="w-full p-3.5 pr-11 border-2 border-gray-300 rounded-xl text-sm bg-gray-50 outline-none font-mono font-bold focus:border-[#1e5eb8] focus:bg-white transition placeholder:text-gray-700 placeholder:font-bold"
                     />
                     <Phone className="w-4 h-4 text-gray-400 absolute right-4 top-4" />
@@ -265,7 +263,6 @@ export default function ContactPage() {
                     required value={message}
                     onChange={(e) => setMessage(e.target.value)}
                     rows={4}
-                    placeholder="اكتب رسالتك بالتفصيل هنا..."
                     className="w-full p-3.5 pr-11 border-2 border-gray-300 rounded-xl text-sm bg-gray-50 outline-none font-bold focus:border-[#1e5eb8] focus:bg-white transition resize-none placeholder:text-gray-700 placeholder:font-bold"
                   />
                   <MessageSquare className="w-4 h-4 text-gray-400 absolute right-4 top-4" />
@@ -330,7 +327,6 @@ export default function ContactPage() {
                 <input
                   type="password" autoFocus value={password}
                   onChange={(e) => { setPassword(e.target.value); setInboxError(""); }}
-                  placeholder="أدخل كلمة المرور..."
                   className="w-full p-4 border-2 border-gray-300 rounded-2xl text-sm bg-white outline-none font-mono font-bold text-center focus:border-[#1e5eb8] transition placeholder:text-gray-600 placeholder:font-bold"
                 />
                 <button

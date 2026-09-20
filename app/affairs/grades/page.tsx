@@ -261,7 +261,6 @@ export default function AffairsGradesPage() {
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="بحث باسم الطالب، الرقم القومي، أو المادة..."
                 className="w-full p-3.5 pl-11 border border-gray-200 rounded-2xl text-sm bg-gray-50 outline-none font-bold focus:border-emerald-600 focus:bg-white transition"
               />
               <Search className="w-4 h-4 text-gray-400 absolute left-4 top-4" />

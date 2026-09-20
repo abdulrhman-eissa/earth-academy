@@ -4,9 +4,9 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   UserCheck, CheckCircle2, ArrowRight, ShieldAlert, GraduationCap,
-  Hash, Lock, Briefcase, BookOpen, User, Award, Loader2,
-} from "lucide-react";
+  Hash, Lock, Briefcase, BookOpen, User, Award, Loader2, Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
+import { PasswordStrengthBar, PasswordRequirements, ConfirmPasswordMatch } from "@/components/PasswordStrength";
 
 interface FacultyRecord {
   employeeId: string | number;
@@ -23,6 +23,9 @@ export default function FacultyRegisterPage() {
   const [targetYear, setTargetYear] = useState("الفرقة الأولى");
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [employeeId, setEmployeeId] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -43,8 +46,16 @@ export default function FacultyRegisterPage() {
     e.preventDefault();
     setError("");
 
-    if (!doctorName || !primaryCourse || !employeeId || password.length < 8) {
-      setError("يرجى إدخال اسم الدكتور والمادة الرئيسية وكلمة مرور 8 أحرف على الأقل.");
+    if (!doctorName || !primaryCourse || !employeeId) {
+      setError("يرجى إدخال اسم الدكتور والمادة الرئيسية والرقم الوظيفي.");
+      return;
+    }
+    if (password.length < 10) {
+      setError("كلمة المرور يجب أن تكون 10 أحرف على الأقل.");
+      return;
+    }
+    if (confirmPassword && password !== confirmPassword) {
+      setError("كلمتا المرور غير متطابقتين.");
       return;
     }
 
@@ -56,7 +67,7 @@ export default function FacultyRegisterPage() {
       let response = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, role: "FACULTY" }),
+        body: JSON.stringify({ email, password, confirmPassword, role: "FACULTY" }),
       });
 
       if (response.status === 409) {
@@ -193,7 +204,6 @@ export default function FacultyRegisterPage() {
                     value={employeeId}
                     onChange={(e) => setEmployeeId(e.target.value)}
                     required
-                    placeholder="مثال: 2026901"
                     className="w-full p-3.5 pr-11 border-2 border-gray-300 rounded-xl text-sm bg-gray-50 outline-none font-mono font-bold text-gray-900 focus:border-[#1e5eb8] focus:bg-white transition placeholder:text-gray-500 placeholder:font-bold"
                   />
                   <Hash className="w-4 h-4 text-gray-400 absolute right-4 top-4" />
@@ -201,19 +211,56 @@ export default function FacultyRegisterPage() {
               </div>
 
               <div>
-                <label className="block text-[11px] font-black text-gray-700 mb-1.5">كلمة المرور (8 أحرف على الأقل) *</label>
+                <label className="block text-[11px] font-black text-gray-700 mb-1.5">كلمة المرور (10 أحرف على الأقل + رمز خاص) *</label>
                 <div className="relative">
                   <input
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    minLength={8}
-                    placeholder="أدخل كلمة مرور قوية..."
-                    className="w-full p-3.5 pr-11 border-2 border-gray-300 rounded-xl text-sm bg-gray-50 outline-none font-mono font-bold text-gray-900 focus:border-[#1e5eb8] focus:bg-white transition placeholder:text-gray-500 placeholder:font-bold"
+                    minLength={10}
+                    className="w-full p-3.5 pl-11 pr-11 border-2 border-gray-300 rounded-xl text-sm bg-gray-50 outline-none font-mono font-bold text-gray-900 focus:border-[#1e5eb8] focus:bg-white transition placeholder:text-gray-500 placeholder:font-bold"
                   />
                   <Lock className="w-4 h-4 text-gray-400 absolute right-4 top-4" />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute left-4 top-3.5 text-gray-400 hover:text-[#1e5eb8] transition"
+                    title={showPassword ? "إخفاء" : "إظهار"}
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
                 </div>
+                {password && (
+                  <>
+                    <PasswordStrengthBar password={password} />
+                    <PasswordRequirements password={password} />
+                  </>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-black text-gray-700 mb-1.5">تأكيد كلمة المرور *</label>
+                <div className="relative">
+                  <input
+                    type={showConfirmPassword ? "text" : "password"}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required
+                    minLength={10}
+                    className="w-full p-3.5 pl-11 pr-11 border-2 border-gray-300 rounded-xl text-sm bg-gray-50 outline-none font-mono font-bold text-gray-900 focus:border-[#1e5eb8] focus:bg-white transition placeholder:text-gray-500 placeholder:font-bold"
+                  />
+                  <Lock className="w-4 h-4 text-gray-400 absolute right-4 top-4" />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute left-4 top-3.5 text-gray-400 hover:text-[#1e5eb8] transition"
+                    title={showConfirmPassword ? "إخفاء" : "إظهار"}
+                  >
+                    {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+                <ConfirmPasswordMatch password={password} confirm={confirmPassword} />
               </div>
 
               <div>
@@ -224,7 +271,6 @@ export default function FacultyRegisterPage() {
                     required
                     value={doctorName}
                     onChange={(e) => setDoctorName(e.target.value)}
-                    placeholder="مثال: أ.د/ أحمد محمود السيد"
                     className="w-full p-3.5 pr-11 border-2 border-gray-300 rounded-xl text-sm bg-gray-50 outline-none font-bold text-gray-900 focus:border-[#1e5eb8] focus:bg-white transition placeholder:text-gray-500 placeholder:font-bold"
                   />
                   <User className="w-4 h-4 text-gray-400 absolute right-4 top-4" />
@@ -275,7 +321,6 @@ export default function FacultyRegisterPage() {
                       required
                       value={primaryCourse}
                       onChange={(e) => setPrimaryCourse(e.target.value)}
-                      placeholder="مثال: تاريخ الإسلام السياسي"
                       className="w-full p-3.5 pr-11 border-2 border-gray-300 rounded-xl text-sm bg-white outline-none font-bold text-gray-900 focus:border-[#1e5eb8] transition placeholder:text-gray-500 placeholder:font-bold"
                     />
                     <Briefcase className="w-4 h-4 text-gray-400 absolute right-4 top-4" />
@@ -289,7 +334,6 @@ export default function FacultyRegisterPage() {
                       type="text"
                       value={secondaryCourse}
                       onChange={(e) => setSecondaryCourse(e.target.value)}
-                      placeholder="مثال: النظم والحضارة الإسلامية"
                       className="w-full p-3.5 pr-11 border-2 border-gray-300 rounded-xl text-sm bg-white outline-none font-bold text-gray-900 focus:border-[#1e5eb8] transition placeholder:text-gray-500 placeholder:font-bold"
                     />
                     <Briefcase className="w-4 h-4 text-gray-400 absolute right-4 top-4" />

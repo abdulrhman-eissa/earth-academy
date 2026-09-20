@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   Crown, Users, UserCheck, Building2, BookOpen, FileText, ShieldAlert,
   Award, TrendingUp, Clock, LogOut, Trash2,
@@ -328,6 +329,14 @@ export default function AdminDashboard() {
               <p className="text-[10px] truncate" style={{ color: "rgba(196,181,253,0.95)" }}>admin@earth.edu</p>
             </div>
           </div>
+          <Link
+            href="/change-password"
+            className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold transition"
+            style={{ background: "rgba(59,130,246,0.15)", color: "#93c5fd" }}
+          >
+            <KeyRound className="w-4 h-4" />
+            <span className="flex-1 text-right">تغيير كلمة المرور</span>
+          </Link>
           <button
             onClick={handleLogout}
             className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold transition"
@@ -605,7 +614,6 @@ export default function AdminDashboard() {
                     <div className="relative">
                       <input
                         value={search} onChange={(e) => setSearch(e.target.value)}
-                        placeholder="ابحث باسم المستخدم أو البريد الإلكتروني..."
                         className="w-full p-3.5 pl-11 pr-4 rounded-xl text-sm font-bold outline-none transition placeholder:text-purple-300/50"
                         style={{ background: "rgba(255,255,255,0.05)", color: "white", border: "1px solid rgba(124,58,237,0.2)" }}
                       />
@@ -764,7 +772,6 @@ export default function AdminDashboard() {
                     <div className="relative">
                       <input
                         value={search} onChange={(e) => setSearch(e.target.value)}
-                        placeholder="ابحث باسم الطالب أو المادة..."
                         className="w-full p-3.5 pl-11 pr-4 rounded-xl text-sm font-bold outline-none"
                         style={{ background: "rgba(255,255,255,0.05)", color: "white", border: "1px solid rgba(124,58,237,0.2)" }}
                       />
@@ -833,7 +840,6 @@ export default function AdminDashboard() {
                     <div className="relative">
                       <input
                         value={search} onChange={(e) => setSearch(e.target.value)}
-                        placeholder="ابحث باسم المرسل أو الهاتف..."
                         className="w-full p-3.5 pl-11 pr-4 rounded-xl text-sm font-bold outline-none"
                         style={{ background: "rgba(255,255,255,0.05)", color: "white", border: "1px solid rgba(124,58,237,0.2)" }}
                       />
@@ -1177,7 +1183,6 @@ export default function AdminDashboard() {
             <label className="block text-xs font-black mb-2" style={{ color: "rgba(196,181,253,0.95)" }}>كلمة المرور الجديدة (8 أحرف على الأقل)</label>
             <input
               type="text" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} autoFocus minLength={8} required
-              placeholder="أدخل كلمة مرور جديدة..."
               className="w-full p-3.5 rounded-xl text-sm font-mono font-bold outline-none transition mb-5 placeholder:text-purple-300/40"
               style={{ background: "rgba(255,255,255,0.05)", color: "white", border: "2px solid rgba(124,58,237,0.3)" }}
             />

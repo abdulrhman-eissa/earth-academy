@@ -11,6 +11,7 @@ import {
 } from "@/lib/auth";
 import { checkServerRateLimit, getClientIp } from "@/lib/rate-limit";
 import { audit } from "@/lib/audit";
+import { validatePassword } from "@/lib/password-strength";
 
 const roles = ["STUDENT", "FACULTY", "AFFAIRS", "ADMIN"] as const;
 type Role = (typeof roles)[number];
@@ -53,7 +54,6 @@ export async function POST(request: Request, context: { params: Promise<{ action
   }
 
   if (action === "register") {
-    // Rate limit: 5 محاولات تسجيل في الدقيقة لكل IP
     const rl = checkServerRateLimit(`register:${ip}`, 5, 60000, 5 * 60000);
     if (!rl.allowed) {
       return NextResponse.json(
@@ -64,9 +64,25 @@ export async function POST(request: Request, context: { params: Promise<{ action
 
     const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
     const password = typeof body.password === "string" ? body.password : "";
+    const confirmPassword = typeof body.confirmPassword === "string" ? body.confirmPassword : "";
     const role = body.role;
-    if (!email || !email.includes("@") || password.length < 8 || !validSelfRegistrationRole(role)) {
-      return NextResponse.json({ error: "A valid email, password (8+ characters), and student or faculty role are required" }, { status: 400 });
+
+    if (!email || !email.includes("@")) {
+      return NextResponse.json({ error: "يرجى إدخال بريد إلكتروني صالح" }, { status: 400 });
+    }
+    if (!validSelfRegistrationRole(role)) {
+      return NextResponse.json({ error: "دور غير صالح للتسجيل الذاتي" }, { status: 400 });
+    }
+
+    // فحص تأكيد كلمة المرور
+    if (confirmPassword && password !== confirmPassword) {
+      return NextResponse.json({ error: "كلمتا المرور غير متطابقتين" }, { status: 400 });
+    }
+
+    // فحص قوة كلمة المرور
+    const pwCheck = validatePassword(password);
+    if (!pwCheck.valid) {
+      return NextResponse.json({ error: pwCheck.error }, { status: 400 });
     }
 
     const fullName = typeof body.fullName === "string" ? body.fullName.trim() : "";
@@ -158,7 +174,6 @@ export async function POST(request: Request, context: { params: Promise<{ action
     const email = typeof body.email === "string" ? body.email : "";
     const password = typeof body.password === "string" ? body.password : "";
 
-    // Rate limit: 5 محاولات دخول في الدقيقة لكل (IP + إيميل)
     const rl = checkServerRateLimit(`login:${ip}:${email.toLowerCase()}`, 5, 60000, 5 * 60000);
     if (!rl.allowed) {
       return NextResponse.json(

@@ -132,13 +132,25 @@ export default function HomePage() {
         <div className="flex items-center justify-between px-6 md:px-10 py-5">
           <Link
             href="/contact"
-            className="group flex items-center gap-2 text-gray-600 hover:text-[#1e5eb8] transition"
+            className="group relative flex items-center gap-3 pl-2 pr-4 py-2 rounded-2xl bg-white border-2 border-blue-100 hover:border-[#1e5eb8] hover:shadow-xl hover:shadow-blue-500/20 hover:-translate-y-0.5 transition-all duration-300"
             title="التواصل مع المطور"
           >
-            <div className="w-10 h-10 rounded-2xl bg-gray-100 group-hover:bg-blue-50 flex items-center justify-center transition border border-gray-200 group-hover:border-blue-200">
-              <Settings className="w-5 h-5 group-hover:rotate-90 transition-transform duration-500" />
+            {/* Gear Icon - دائرة زرقاء واضحة */}
+            <div className="relative w-11 h-11 rounded-full bg-[#1e5eb8] flex items-center justify-center shadow-lg shadow-blue-500/40 group-hover:scale-110 transition-transform duration-300 flex-shrink-0">
+              <Settings className="w-5 h-5 text-white group-hover:rotate-180 transition-transform duration-700" strokeWidth={2.5} />
+              <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-400 rounded-full border-2 border-white animate-pulse" />
             </div>
-            <span className="text-xs font-bold hidden md:inline">التواصل</span>
+
+            {/* Developer Info */}
+            <div className="hidden md:flex flex-col items-start leading-none">
+              <span className="text-[10px] font-black text-gray-500 mb-1.5 tracking-wide">تطوير المنظومة</span>
+              <span className="text-base font-black text-[#1e5eb8] group-hover:text-[#1650a0] transition-all duration-300 group-hover:tracking-wide whitespace-nowrap">
+                عبدالرحمن عوض سعد
+              </span>
+            </div>
+
+            {/* Mobile only */}
+            <span className="md:hidden text-xs font-black text-[#1e5eb8]">المطور</span>
           </Link>
 
           {/* Logo top */}

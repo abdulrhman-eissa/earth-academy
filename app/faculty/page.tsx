@@ -2,9 +2,11 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   UserCheck, LogOut, Download, Search, Eye, X, FileText,
   Plus, BookOpen, Save, TrendingUp, Clock, CheckCircle2, Loader2,
+  KeyRound,
 } from "lucide-react";
 import NotificationBell from "@/components/NotificationBell";
 
@@ -199,6 +201,13 @@ export default function FacultyDashboard() {
         </div>
         <div className="flex items-center gap-3">
           <NotificationBell variant="dark" />
+          <Link
+            href="/change-password"
+            className="bg-white/15 hover:bg-white/25 border border-white/20 text-white p-2.5 rounded-2xl transition flex items-center justify-center"
+            title="تغيير كلمة المرور"
+          >
+            <KeyRound className="w-4 h-4" />
+          </Link>
           <button
             onClick={handleExportCSV}
             suppressHydrationWarning
@@ -331,7 +340,6 @@ export default function FacultyDashboard() {
                   <div className="relative flex-1">
                     <input
                       type="text"
-                      placeholder="بحث باسم الطالب أو الرقم القومي..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                       className="w-full p-3.5 pl-11 border border-gray-200 rounded-2xl text-sm bg-gray-50 text-gray-900 outline-none font-bold focus:border-[#1e5eb8] focus:bg-white transition"
@@ -413,7 +421,6 @@ export default function FacultyDashboard() {
                                       s.notes
                                     )
                                   }
-                                  placeholder="—"
                                   className={`w-20 p-2.5 border rounded-xl font-bold font-mono text-center outline-none transition ${
                                     graded
                                       ? "bg-blue-50 border-blue-200 text-[#1e5eb8]"
@@ -426,7 +433,6 @@ export default function FacultyDashboard() {
                                   type="text"
                                   value={s.notes ?? ""}
                                   onChange={(e) => handleScoreChange(s.id, s.score, e.target.value || null)}
-                                  placeholder="اكتب ملاحظاتك..."
                                   className="w-full min-w-[200px] p-2.5 border border-gray-200 rounded-xl text-xs bg-gray-50 text-gray-900 outline-none focus:border-[#1e5eb8] focus:bg-white"
                                 />
                               </td>
@@ -499,7 +505,6 @@ export default function FacultyDashboard() {
                   value={newCourse}
                   onChange={(e) => setNewCourse(e.target.value)}
                   required
-                  placeholder="مثال: التاريخ الإسلامي"
                   className="w-full p-3.5 border border-gray-200 rounded-2xl text-sm bg-gray-50 text-gray-900 outline-none focus:border-[#1e5eb8] focus:bg-white"
                 />
               </div>
@@ -509,7 +514,6 @@ export default function FacultyDashboard() {
                   value={newTitle}
                   onChange={(e) => setNewTitle(e.target.value)}
                   required
-                  placeholder="مثال: بحث عن الدولة الأموية"
                   className="w-full p-3.5 border border-gray-200 rounded-2xl text-sm bg-gray-50 text-gray-900 outline-none focus:border-[#1e5eb8] focus:bg-white"
                 />
               </div>
@@ -519,7 +523,6 @@ export default function FacultyDashboard() {
                   value={newDesc}
                   onChange={(e) => setNewDesc(e.target.value)}
                   rows={3}
-                  placeholder="تفاصيل التكليف للطلاب..."
                   className="w-full p-3.5 border border-gray-200 rounded-2xl text-sm bg-gray-50 text-gray-900 outline-none focus:border-[#1e5eb8] focus:bg-white"
                 />
               </div>

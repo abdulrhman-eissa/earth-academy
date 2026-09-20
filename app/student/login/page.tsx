@@ -2,9 +2,10 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { GraduationCap, ArrowRight, ShieldCheck, ShieldAlert, UserPlus, LogIn, CheckCircle2, User, Lock, Hash, BookOpen } from "lucide-react";
+import { GraduationCap, ArrowRight, ShieldCheck, ShieldAlert, UserPlus, LogIn, CheckCircle2, User, Lock, Hash, BookOpen, Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 import { sanitizeInput, detectMaliciousPattern, checkRateLimit } from "@/lib/security";
+import { PasswordStrengthBar, PasswordRequirements, ConfirmPasswordMatch } from "@/components/PasswordStrength";
 
 type Mode = "signup" | "login";
 
@@ -22,6 +23,9 @@ export default function StudentLoginPage() {
   const [targetYear, setTargetYear] = useState("الفرقة الأولى");
   const [specialty, setSpecialty] = useState("تاريخ وحضارة (عام)");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -74,8 +78,12 @@ export default function StudentLoginPage() {
       setErrorMessage("يرجى إدخال الرقم القومي أو رقم الجواز بشكل صحيح.");
       return;
     }
-    if (cleanPassword.length < 8) {
-      setErrorMessage("كلمة المرور يجب أن تكون 8 أحرف على الأقل.");
+    if (cleanPassword.length < 10) {
+      setErrorMessage("كلمة المرور يجب أن تكون 10 أحرف على الأقل.");
+      return;
+    }
+    if (mode === "signup" && confirmPassword && cleanPassword !== confirmPassword) {
+      setErrorMessage("كلمتا المرور غير متطابقتين.");
       return;
     }
 
@@ -100,7 +108,7 @@ export default function StudentLoginPage() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            email, password: cleanPassword, role: "STUDENT",
+            email, password: cleanPassword, confirmPassword, role: "STUDENT",
             fullName: cleanName, academicYear: targetYear, studentCode: cleanId,
           }),
         });
@@ -277,7 +285,6 @@ export default function StudentLoginPage() {
                     <input
                       type="text" required value={studentName}
                       onChange={(e) => { setStudentName(e.target.value); setErrorMessage(""); }}
-                      placeholder="أدخل اسمك الثلاثي كما في الكارنيه..."
                       className="w-full p-3.5 pr-11 border-2 border-gray-300 rounded-xl text-sm bg-gray-50 outline-none font-bold focus:border-[#1e5eb8] focus:bg-white transition placeholder:text-gray-700 placeholder:font-bold"
                     />
                     <User className="w-4 h-4 text-gray-400 absolute right-4 top-4" />
@@ -293,7 +300,6 @@ export default function StudentLoginPage() {
                   <input
                     type="text" required value={nationalId}
                     onChange={(e) => { setNationalId(e.target.value); setErrorMessage(""); setAlreadyExists(false); }}
-                    placeholder={nationality === "مصري" ? "مثال: 30001011200010" : "أدخل رقم جواز السفر..."}
                     className="w-full p-3.5 pr-11 border-2 border-gray-300 rounded-xl text-sm bg-gray-50 outline-none font-mono font-bold focus:border-[#1e5eb8] focus:bg-white transition placeholder:text-gray-700 placeholder:font-bold"
                   />
                   <Hash className="w-4 h-4 text-gray-400 absolute right-4 top-4" />
@@ -301,17 +307,61 @@ export default function StudentLoginPage() {
               </div>
 
               <div>
-                <label className="block text-[11px] font-black text-gray-700 mb-1.5">كلمة المرور (8 أحرف على الأقل) *</label>
+                <label className="block text-[11px] font-black text-gray-700 mb-1.5">
+                  كلمة المرور {isSignup ? "(10 أحرف على الأقل + رمز خاص)" : ""} *
+                </label>
                 <div className="relative">
                   <input
-                    type="password" required minLength={8} value={password}
+                    type={showPassword ? "text" : "password"}
+                    required
+                    minLength={isSignup ? 10 : 1}
+                    value={password}
                     onChange={(e) => { setPassword(e.target.value); setErrorMessage(""); }}
-                    placeholder="أدخل كلمة مرور قوية..."
-                    className="w-full p-3.5 pr-11 border-2 border-gray-300 rounded-xl text-sm bg-gray-50 outline-none font-mono font-bold focus:border-[#1e5eb8] focus:bg-white transition placeholder:text-gray-700 placeholder:font-bold"
+                    className="w-full p-3.5 pl-11 pr-11 border-2 border-gray-300 rounded-xl text-sm bg-gray-50 outline-none font-mono font-bold focus:border-[#1e5eb8] focus:bg-white transition placeholder:text-gray-700 placeholder:font-bold"
                   />
                   <Lock className="w-4 h-4 text-gray-400 absolute right-4 top-4" />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute left-4 top-3.5 text-gray-400 hover:text-[#1e5eb8] transition"
+                    title={showPassword ? "إخفاء" : "إظهار"}
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
                 </div>
+                {isSignup && password && (
+                  <>
+                    <PasswordStrengthBar password={password} />
+                    <PasswordRequirements password={password} />
+                  </>
+                )}
               </div>
+
+              {isSignup && (
+                <div>
+                  <label className="block text-[11px] font-black text-gray-700 mb-1.5">تأكيد كلمة المرور *</label>
+                  <div className="relative">
+                    <input
+                      type={showConfirmPassword ? "text" : "password"}
+                      required
+                      minLength={10}
+                      value={confirmPassword}
+                      onChange={(e) => { setConfirmPassword(e.target.value); setErrorMessage(""); }}
+                      className="w-full p-3.5 pl-11 pr-11 border-2 border-gray-300 rounded-xl text-sm bg-gray-50 outline-none font-mono font-bold focus:border-[#1e5eb8] focus:bg-white transition placeholder:text-gray-700 placeholder:font-bold"
+                    />
+                    <Lock className="w-4 h-4 text-gray-400 absolute right-4 top-4" />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute left-4 top-3.5 text-gray-400 hover:text-[#1e5eb8] transition"
+                      title={showConfirmPassword ? "إخفاء" : "إظهار"}
+                    >
+                      {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                  <ConfirmPasswordMatch password={password} confirm={confirmPassword} />
+                </div>
+              )}
 
               {isSignup && (
                 <>
