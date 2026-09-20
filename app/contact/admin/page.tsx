@@ -11,6 +11,12 @@ import {
   ShieldCheck, LayoutDashboard, Sparkles, Zap, Target,
   GraduationCap, Briefcase, PieChart, Layers, ArrowUpRight,
   CircleDot, MoreHorizontal, Percent, ScrollText,
+  Globe,
+  MapPin,
+  Compass,
+  Monitor,
+  Smartphone,
+  Languages,
 } from "lucide-react";
 
 interface Stats {
@@ -51,6 +57,15 @@ interface AuditRow {
   details: string | null;
   ip: string | null;
   userAgent: string | null;
+  browser: string | null;
+  os: string | null;
+  device: string | null;
+  country: string | null;
+  city: string | null;
+  region: string | null;
+  isp: string | null;
+  referer: string | null;
+  language: string | null;
   createdAt: string;
 }
 
@@ -862,8 +877,9 @@ export default function AdminDashboard() {
               )}
 
               {/* THREATS */}
+              {/* THREATS */}
               {tab === "threats" && (
-                <div className="p-8 space-y-5 max-w-[1200px] mx-auto animate-fadeIn">
+                <div className="p-8 space-y-5 max-w-[1500px] mx-auto animate-fadeIn">
                   <div className="flex items-center justify-between flex-wrap gap-3">
                     <div>
                       <h1 className="text-3xl font-black text-white flex items-center gap-3">
@@ -871,7 +887,7 @@ export default function AdminDashboard() {
                         محاولات التسلل
                       </h1>
                       <p className="text-sm font-bold mt-1" style={{ color: "rgba(196,181,253,0.95)" }}>
-                        محاولات الوصول غير المصرّح بها — يتم تسجيلها تلقائياً
+                        تتبع مفصّل لكل محاولة وصول غير مصرّح بها — IP، الموقع الجغرافي، الجهاز، والمتصفح
                       </p>
                     </div>
                     <button
@@ -890,63 +906,81 @@ export default function AdminDashboard() {
                     <div>
                       <p className="font-black text-red-300 text-sm">نظام الحماية يعمل</p>
                       <p className="text-xs font-bold mt-1" style={{ color: "rgba(254,202,202,0.9)" }}>
-                        صندوق الرسائل الوهمي في ترس التواصل يعمل كفخ (Honeypot). كل محاولة تُسجَّل مع IP والوقت وكلمة المرور المُستخدمة.
+                        صندوق الرسائل الوهمي (Honeypot) يسجّل كل محاولة مع تفاصيل كاملة عن المتسلل: IP، الموقع الجغرافي، المتصفح، نظام التشغيل، الجهاز، ومزود الإنترنت.
                       </p>
                     </div>
                   </div>
 
-                  <div className="rounded-[24px] overflow-hidden" style={{ background: "#221540", border: "1px solid rgba(239,68,68,0.3)" }}>
-                    <table className="w-full text-right text-sm">
-                      <thead>
-                        <tr className="text-[11px] font-black" style={{ color: "rgba(254,202,202,0.9)", background: "rgba(239,68,68,0.15)" }}>
-                          <th className="px-6 py-4 text-right">النوع</th>
-                          <th className="px-6 py-4 text-right">التفاصيل</th>
-                          <th className="px-6 py-4 text-right">IP</th>
-                          <th className="px-6 py-4 text-right">المتصفح</th>
-                          <th className="px-6 py-4 text-right">الوقت</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {threatsLoading ? (
-                          <tr><td colSpan={5} className="p-16 text-center">
-                            <Loader2 className="w-8 h-8 mx-auto animate-spin" style={{ color: "#a855f7" }} />
-                          </td></tr>
-                        ) : threats.length === 0 ? (
-                          <tr><td colSpan={5} className="p-16 text-center">
-                            <ShieldAlert className="w-14 h-14 mx-auto mb-3" style={{ color: "rgba(196,181,253,0.3)" }} />
-                            <p className="text-sm font-bold" style={{ color: "rgba(196,181,253,0.7)" }}>لا توجد محاولات تسلل</p>
-                            <p className="text-[11px] font-bold mt-1" style={{ color: "rgba(196,181,253,0.5)" }}>النظام آمن</p>
-                          </td></tr>
-                        ) : threats.map((t) => (
-                          <tr key={t.id} style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
-                            <td className="px-6 py-4">
-                              <span className="text-[10px] font-black px-2.5 py-1 rounded-md inline-flex items-center gap-1" style={{ background: "rgba(239,68,68,0.2)", color: "#fca5a5" }}>
-                                <ShieldAlert className="w-3 h-3" /> اختراق
-                              </span>
-                            </td>
-                            <td className="px-6 py-4 text-xs font-bold" style={{ color: "rgba(254,202,202,0.95)" }}>
-                              {t.details ?? "—"}
-                            </td>
-                            <td className="px-6 py-4 font-mono text-[10px] font-bold" style={{ color: "rgba(196,181,253,0.85)" }}>
-                              {t.ip ?? "—"}
-                            </td>
-                            <td className="px-6 py-4 text-[10px]" style={{ color: "rgba(196,181,253,0.6)", maxWidth: "180px" }}>
-                              <span className="block truncate" title={t.userAgent ?? ""}>
-                                {t.userAgent ? t.userAgent.slice(0, 35) + "..." : "—"}
-                              </span>
-                            </td>
-                            <td className="px-6 py-4 text-[11px] font-mono font-bold" style={{ color: "rgba(196,181,253,0.9)" }}>
+                  {threatsLoading ? (
+                    <div className="py-16 text-center">
+                      <Loader2 className="w-10 h-10 mx-auto animate-spin" style={{ color: "#a855f7" }} />
+                    </div>
+                  ) : threats.length === 0 ? (
+                    <div className="rounded-2xl p-16 text-center" style={{ background: "#221540", border: "1px solid rgba(124,58,237,0.35)" }}>
+                      <ShieldCheck className="w-16 h-16 mx-auto mb-3" style={{ color: "rgba(16,185,129,0.5)" }} />
+                      <p className="text-base font-black" style={{ color: "rgba(196,181,253,0.85)" }}>لا توجد محاولات تسلل</p>
+                      <p className="text-xs font-bold mt-2" style={{ color: "rgba(196,181,253,0.6)" }}>النظام يعمل بأمان</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                      {threats.map((t) => (
+                        <div key={t.id} className="rounded-[24px] p-6 space-y-4" style={{ background: "#221540", border: "1px solid rgba(239,68,68,0.35)" }}>
+                          {/* Header */}
+                          <div className="flex items-start justify-between gap-3 pb-4" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+                            <div className="flex items-center gap-3">
+                              <div className="w-11 h-11 rounded-xl flex items-center justify-center" style={{ background: "rgba(239,68,68,0.2)" }}>
+                                <ShieldAlert className="w-5 h-5 text-red-400" />
+                              </div>
+                              <div>
+                                <p className="font-black text-red-300 text-sm">محاولة اختراق</p>
+                                <p className="text-[10px] font-mono font-bold mt-0.5" style={{ color: "rgba(196,181,253,0.7)" }}>
+                                  #{t.id.slice(-8).toUpperCase()}
+                                </p>
+                              </div>
+                            </div>
+                            <span className="text-[10px] font-mono font-bold px-2.5 py-1 rounded-md" style={{ background: "rgba(255,255,255,0.05)", color: "rgba(196,181,253,0.9)" }}>
                               {new Date(t.createdAt).toLocaleString("ar-EG")}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                            </span>
+                          </div>
+
+                          {/* Details */}
+                          {t.details && (
+                            <div className="rounded-xl p-3" style={{ background: "rgba(239,68,68,0.08)" }}>
+                              <p className="text-[10px] font-black mb-1" style={{ color: "#fca5a5" }}>التفاصيل</p>
+                              <p className="text-xs font-bold" style={{ color: "rgba(254,202,202,0.95)" }}>{t.details}</p>
+                            </div>
+                          )}
+
+                          {/* Grid info */}
+                          <div className="grid grid-cols-2 gap-3">
+                            <ThreatInfoCell icon={<Hash className="w-3.5 h-3.5" />} label="IP" value={t.ip ?? "—"} mono />
+                            <ThreatInfoCell icon={<Globe className="w-3.5 h-3.5" />} label="الدولة" value={t.country ?? "—"} />
+                            <ThreatInfoCell icon={<MapPin className="w-3.5 h-3.5" />} label="المدينة" value={t.city ?? "—"} />
+                            <ThreatInfoCell icon={<Building2 className="w-3.5 h-3.5" />} label="مزود الخدمة" value={t.isp ?? "—"} />
+                            <ThreatInfoCell icon={<Compass className="w-3.5 h-3.5" />} label="المتصفح" value={t.browser ?? "—"} />
+                            <ThreatInfoCell icon={<Monitor className="w-3.5 h-3.5" />} label="نظام التشغيل" value={t.os ?? "—"} />
+                            <ThreatInfoCell icon={<Smartphone className="w-3.5 h-3.5" />} label="الجهاز" value={t.device ?? "—"} />
+                            <ThreatInfoCell icon={<Languages className="w-3.5 h-3.5" />} label="اللغة" value={t.language ?? "—"} />
+                          </div>
+
+                          {/* User Agent */}
+                          {t.userAgent && (
+                            <details className="rounded-xl" style={{ background: "rgba(255,255,255,0.03)" }}>
+                              <summary className="cursor-pointer p-3 text-[10px] font-black" style={{ color: "rgba(196,181,253,0.85)" }}>
+                                عرض User-Agent الكامل
+                              </summary>
+                              <p className="px-3 pb-3 text-[10px] font-mono break-all" style={{ color: "rgba(196,181,253,0.7)" }}>
+                                {t.userAgent}
+                              </p>
+                            </details>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
 
-              {/* AUDIT LOG */}
               {tab === "audit" && (
                 <div className="p-8 space-y-5 max-w-[1500px] mx-auto animate-fadeIn">
                   <div className="flex items-center justify-between flex-wrap gap-3">
@@ -1253,6 +1287,21 @@ function ProgressRing({ percent, size, stroke, color, label, sublabel }: { perce
         <p className="text-3xl font-black text-white leading-none">{label}</p>
         <p className="text-[10px] font-black mt-1" style={{ color: "rgba(196,181,253,0.9)" }}>{sublabel}</p>
       </div>
+    </div>
+  );
+}
+
+
+function ThreatInfoCell({ icon, label, value, mono }: { icon: React.ReactNode; label: string; value: string; mono?: boolean }) {
+  return (
+    <div className="rounded-xl p-3" style={{ background: "rgba(255,255,255,0.03)" }}>
+      <div className="flex items-center gap-1.5 mb-1" style={{ color: "rgba(196,181,253,0.75)" }}>
+        {icon}
+        <span className="text-[9px] font-black">{label}</span>
+      </div>
+      <p className={`text-xs font-bold truncate ${mono ? "font-mono" : ""}`} style={{ color: "#fafafa" }} title={value}>
+        {value}
+      </p>
     </div>
   );
 }
