@@ -43,6 +43,7 @@ export default function WordEditorPage() {
   const [activityLog, setActivityLog] = useState<ActivityEntry[]>([]);
   const [lastSaveText, setLastSaveText] = useState("");
   const [showRunPanel, setShowRunPanel] = useState(false);
+  const [pendingContent, setPendingContent] = useState<string | null>(null);
 
   const addActivity = useCallback((type: string, details?: string) => {
     setActivityLog((prev) => [
@@ -121,9 +122,7 @@ export default function WordEditorPage() {
           if (subRes.submission.status === "SUBMITTED" || subRes.submission.status === "REVIEWED") {
             setIsSubmitted(true);
           }
-          if (editor) {
-            setTimeout(() => editor.commands.setContent(content), 100);
-          }
+          setPendingContent(content);
         } else {
           setTitle(chosen.title);
           addActivity("OPEN_EDITOR", "فتح المحرر لأول مرة");
@@ -136,24 +135,20 @@ export default function WordEditorPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router]);
 
-  async function handleSaveDraft() {
-    console.log("=== SAVE DRAFT START ===");
-    console.log("assignment:", assignment);
-    console.log("title:", title);
-    console.log("htmlContent length:", htmlContent.length);
-    
-    if (!assignment) {
-      console.log("❌ assignment is null/undefined");
-      setError("لم يتم تحميل التكليف. يرجى تحديث الصفحة.");
-      return;
+  useEffect(() => {
+    if (pendingContent && editor) {
+      console.log("[EDITOR] Setting content, length:", pendingContent.length);
+      editor.commands.setContent(pendingContent);
+      setPendingContent(null);
     }
-    
+  }, [pendingContent, editor]);
+
+  async function handleSaveDraft() {
+    if (!assignment) return;
     setSaving(true);
     setError("");
-    
+
     const plainText = htmlContent.replace(/<[^>]+>/g, "").trim();
-    console.log("plainText length:", plainText.length);
-    console.log("POST URL:", `/api/assignments/${assignment.id}/submissions`);
 
     const newActivity: ActivityEntry[] = [
       { at: new Date().toISOString(), type: "SAVE_DRAFT", details: `حفظ مسودة (${stats.words} كلمة)` },
@@ -173,30 +168,19 @@ export default function WordEditorPage() {
           activityLog: newActivity,
         }),
       });
-      
-      console.log("RESPONSE STATUS:", res.status);
-      const responseText = await res.text();
-      console.log("RESPONSE BODY:", responseText);
-      
+
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
+
       if (!res.ok) {
-        let errorMsg = "تعذر الحفظ";
-        try {
-          const parsed = JSON.parse(responseText);
-          errorMsg = parsed.error || errorMsg;
-        } catch {}
-        console.log("❌ Error:", errorMsg);
-        setError(errorMsg);
+        setError(data.error || "تعذر الحفظ");
       } else {
-        console.log("✅ Save successful");
         setActivityLog(newActivity);
         setLastSaveText(`آخر حفظ: ${new Date().toLocaleTimeString("ar-EG")}`);
       }
-    } catch (err) {
-      console.log("❌ EXCEPTION:", err);
+    } catch {
       setError("تعذر الاتصال بالخادم");
     } finally {
       setSaving(false);
-      console.log("=== SAVE DRAFT END ===");
     }
   }
 
