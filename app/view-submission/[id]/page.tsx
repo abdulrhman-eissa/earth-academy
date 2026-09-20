@@ -1,17 +1,17 @@
 "use client";
 
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
   ArrowRight, GraduationCap, FileText, Calendar, User, BookOpen,
   Award, Printer, Loader2, AlertCircle, Clock, CheckCircle2,
-  Hash, ShieldCheck, Building2, Type, ChevronRight, ChevronLeft,
-  BookMarked, Layers,
+  Hash, ShieldCheck, Building2, Type,
 } from "lucide-react";
 
 interface SubmissionDetail {
   id: string;
   text: string;
+  htmlContent: string | null;
   score: number | null;
   notes: string | null;
   status: string;
@@ -38,8 +38,6 @@ const LEVEL_LABELS: Record<string, string> = {
   LEVEL_4: "الفرقة الرابعة",
 };
 
-const WORDS_PER_PAGE = 200;
-
 function scoreLabel(score: number | null): { text: string; bg: string; color: string } {
   if (score === null) return { text: "قيد المراجعة", bg: "#fef3c7", color: "#b45309" };
   if (score >= 90) return { text: "ممتاز", bg: "#d1fae5", color: "#065f46" };
@@ -49,48 +47,6 @@ function scoreLabel(score: number | null): { text: string; bg: string; color: st
   return { text: "راسب", bg: "#fee2e2", color: "#991b1b" };
 }
 
-function splitIntoPages(text: string, wordsPerPage: number): string[] {
-  const clean = text.trim();
-  if (!clean) return ["لا يوجد محتوى"];
-
-  // تقسيم حسب الفقرات أولاً
-  const paragraphs = clean.split(/\n\n+/).filter((p) => p.trim());
-
-  const pages: string[] = [];
-  let current = "";
-  let currentWords = 0;
-
-  for (const para of paragraphs) {
-    const paraWords = para.trim().split(/\s+/).length;
-
-    if (currentWords + paraWords > wordsPerPage && current.trim()) {
-      pages.push(current.trim());
-      current = para;
-      currentWords = paraWords;
-    } else {
-      current += (current ? "\n\n" : "") + para;
-      currentWords += paraWords;
-    }
-  }
-
-  if (current.trim()) pages.push(current.trim());
-
-  // لو صفحة واحدة طويلة جداً، نقسمها بالكلمات
-  const finalPages: string[] = [];
-  for (const page of pages) {
-    const words = page.split(/\s+/);
-    if (words.length <= wordsPerPage * 1.5) {
-      finalPages.push(page);
-    } else {
-      for (let i = 0; i < words.length; i += wordsPerPage) {
-        finalPages.push(words.slice(i, i + wordsPerPage).join(" "));
-      }
-    }
-  }
-
-  return finalPages.length > 0 ? finalPages : ["لا يوجد محتوى"];
-}
-
 export default function ViewSubmissionPage() {
   const params = useParams();
   const router = useRouter();
@@ -98,9 +54,8 @@ export default function ViewSubmissionPage() {
   const [submission, setSubmission] = useState<SubmissionDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [fontSize, setFontSize] = useState(20);
-  const [lineHeight, setLineHeight] = useState(2.2);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [fontSize, setFontSize] = useState(18);
+  const [lineHeight, setLineHeight] = useState(2);
 
   useEffect(() => {
     if (!id) return;
@@ -118,26 +73,10 @@ export default function ViewSubmissionPage() {
     return () => { cancelled = true; };
   }, [id]);
 
-  const pages = useMemo(() => submission ? splitIntoPages(submission.text, WORDS_PER_PAGE) : [], [submission]);
-  const totalPages = pages.length;
-
   function goBack() {
     if (typeof window !== "undefined" && window.history.length > 1) router.back();
     else router.replace("/");
   }
-
-  function nextPage() { if (currentPage < totalPages) setCurrentPage(currentPage + 1); }
-  function prevPage() { if (currentPage > 1) setCurrentPage(currentPage - 1); }
-
-  // Keyboard navigation
-  useEffect(() => {
-    function handleKey(e: KeyboardEvent) {
-      if (e.key === "ArrowLeft") nextPage();
-      if (e.key === "ArrowRight") prevPage();
-    }
-    window.addEventListener("keydown", handleKey);
-    return () => window.removeEventListener("keydown", handleKey);
-  }, [currentPage, totalPages]);
 
   if (loading) {
     return (
@@ -168,10 +107,10 @@ export default function ViewSubmissionPage() {
   const docName = submission.assignment.faculty.facultyProfile?.fullName ?? "عضو هيئة التدريس";
   const docTitle = submission.assignment.faculty.facultyProfile?.academicTitle ?? "";
   const lbl = scoreLabel(submission.score);
-  const wordCount = submission.text.trim() ? submission.text.trim().split(/\s+/).length : 0;
 
-  const currentText = pages[currentPage - 1] ?? "";
-  const currentWords = currentText.split(/\s+/).length;
+  const contentHtml = submission.htmlContent || `<p>${(submission.text || "").replace(/\n/g, "</p><p>")}</p>`;
+  const wordCount = submission.text.trim() ? submission.text.trim().split(/\s+/).length : 0;
+  const estimatedPages = Math.max(1, Math.ceil(wordCount / 250));
 
   return (
     <div dir="rtl" className="min-h-screen bg-gray-100 font-sans text-gray-900 flex flex-col">
@@ -193,7 +132,6 @@ export default function ViewSubmissionPage() {
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
-            {/* Font Size */}
             <div className="flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded-xl px-2.5 py-1.5">
               <Type className="w-3.5 h-3.5 text-gray-500" />
               <button onClick={() => setFontSize(f => Math.max(14, f - 2))} className="w-6 h-6 rounded-md hover:bg-gray-200 text-gray-700 font-black text-xs transition">−</button>
@@ -201,9 +139,8 @@ export default function ViewSubmissionPage() {
               <button onClick={() => setFontSize(f => Math.min(32, f + 2))} className="w-6 h-6 rounded-md hover:bg-gray-200 text-gray-700 font-black text-xs transition">+</button>
             </div>
 
-            {/* Line Height */}
             <div className="hidden md:flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded-xl px-2.5 py-1.5">
-              <Layers className="w-3.5 h-3.5 text-gray-500" />
+              <span className="text-[10px] font-black text-gray-500">تباعد</span>
               <button onClick={() => setLineHeight(l => Math.max(1.6, +(l - 0.2).toFixed(1)))} className="w-6 h-6 rounded-md hover:bg-gray-200 text-gray-700 font-black text-xs transition">−</button>
               <span className="text-[10px] font-black text-gray-700 font-mono min-w-[24px] text-center">{lineHeight}</span>
               <button onClick={() => setLineHeight(l => Math.min(3, +(l + 0.2).toFixed(1)))} className="w-6 h-6 rounded-md hover:bg-gray-200 text-gray-700 font-black text-xs transition">+</button>
@@ -246,142 +183,99 @@ export default function ViewSubmissionPage() {
         </div>
       )}
 
-      {/* MAIN - Page Viewer */}
-      <main className="flex-1 flex flex-col p-6 print:p-0">
+      {/* MAIN */}
+      <main className="flex-1 py-6 print:py-0">
+        <div className="max-w-[1400px] mx-auto px-6 print:max-w-none print:px-0">
 
-        {/* Page indicator & nav */}
-        <div className="max-w-[1400px] w-full mx-auto mb-4 flex items-center justify-between gap-4 print:hidden">
-          <div className="flex items-center gap-2 bg-white border-2 border-gray-200 rounded-xl px-4 py-2.5">
-            <BookMarked className="w-4 h-4 text-[#1e5eb8]" />
-            <span className="text-xs font-black text-gray-700">
-              صفحة <span className="text-[#1e5eb8]">{currentPage}</span> من <span className="text-[#1e5eb8]">{totalPages}</span>
-            </span>
+          {/* Info bar */}
+          <div className="bg-white border-2 border-gray-200 rounded-2xl p-4 mb-5 flex items-center justify-between flex-wrap gap-3 print:hidden">
+            <div className="flex items-center gap-4 text-xs font-black">
+              <span className="flex items-center gap-1.5">
+                <span className="text-[#1e5eb8]">📄 الصفحات التقديرية:</span>
+                <span className="text-gray-900">{estimatedPages}</span>
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="text-emerald-600">📝 الكلمات:</span>
+                <span className="text-gray-900">{wordCount.toLocaleString("ar-EG")}</span>
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="text-purple-600">🔤 الحروف:</span>
+                <span className="text-gray-900">{submission.text.length.toLocaleString("ar-EG")}</span>
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+              <span className="text-[11px] font-bold text-gray-600">بحث أكاديمي موثّق</span>
+            </div>
           </div>
 
-          {/* Page dots */}
-          <div className="hidden md:flex items-center gap-1.5 flex-wrap justify-center">
-            {pages.map((_, i) => (
-              <button
-                key={i}
-                onClick={() => setCurrentPage(i + 1)}
-                className="rounded-full transition-all"
-                style={{
-                  width: currentPage === i + 1 ? 24 : 8,
-                  height: 8,
-                  background: currentPage === i + 1 ? "#1e5eb8" : "#d1d5db",
-                }}
-                title={`صفحة ${i + 1}`}
-              />
-            ))}
-          </div>
-
-          <div className="text-xs font-black text-gray-500">
-            {currentWords} كلمة
-          </div>
-        </div>
-
-        {/* Paper */}
-        <div className="flex-1 max-w-[1400px] w-full mx-auto print:max-w-none">
-
-          <div className="bg-white shadow-xl rounded-3xl overflow-hidden print:shadow-none print:rounded-none flex flex-col min-h-[800px] print:min-h-0">
-
-            {/* Paper Header */}
-            <div className="px-10 py-5 border-b-2 border-gray-100 flex items-center justify-between print:px-0">
+          {/* Paper */}
+          <div className="bg-white rounded-2xl border-2 border-gray-200 shadow-md overflow-hidden print:shadow-none print:rounded-none print:border-none">
+            {/* Official header */}
+            <div className="px-10 py-6 border-b-2 border-gray-100 flex items-center justify-between print:px-0">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-[#1e5eb8] flex items-center justify-center print:bg-transparent print:border-2 print:border-black">
-                  <Building2 className="w-5 h-5 text-white print:text-black" />
+                <div className="w-11 h-11 rounded-xl bg-[#1e5eb8] flex items-center justify-center print:bg-transparent print:border-2 print:border-black">
+                  <Building2 className="w-6 h-6 text-white print:text-black" />
                 </div>
                 <div>
-                  <p className="text-xs font-black text-gray-900">جامعة الأزهر الشريف — كلية اللغة العربية</p>
-                  <p className="text-[10px] font-bold text-gray-500 mt-0.5">قسم التاريخ والحضارة</p>
+                  <p className="text-sm font-black text-gray-900">جامعة الأزهر الشريف — كلية اللغة العربية</p>
+                  <p className="text-[11px] font-bold text-gray-500 mt-0.5">قسم التاريخ والحضارة</p>
                 </div>
               </div>
               <div className="text-left">
-                <p className="text-[10px] font-black text-[#1e5eb8]">منظومة EARTH</p>
-                <p className="text-[9px] font-bold text-gray-500 mt-0.5">بحث علمي محكّم</p>
+                <p className="text-[11px] font-black text-[#1e5eb8]">منظومة EARTH</p>
+                <p className="text-[10px] font-bold text-gray-500 mt-0.5">بحث علمي محكّم</p>
               </div>
             </div>
 
-            {/* Title - only on page 1 */}
-            {currentPage === 1 && (
-              <div className="px-10 py-6 border-b-2 border-gray-100 bg-gray-50/60 print:px-0 print:bg-transparent">
-                <h1 className="text-2xl md:text-3xl font-black text-gray-900 leading-tight mb-4">
-                  {submission.assignment.title}
-                </h1>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <MetaChip icon={<User className="w-3.5 h-3.5" />} label={studentName} />
-                  <MetaChip icon={<Hash className="w-3.5 h-3.5" />} label={studentCode} mono />
-                  <MetaChip icon={<GraduationCap className="w-3.5 h-3.5" />} label={level} />
-                  <MetaChip icon={<BookOpen className="w-3.5 h-3.5" />} label={submission.assignment.course} />
+            {/* Title */}
+            <div className="px-10 py-6 border-b-2 border-gray-100 bg-gray-50/60 print:px-0 print:bg-transparent">
+              <h1 className="text-2xl md:text-3xl font-black text-gray-900 leading-tight mb-4">
+                {submission.assignment.title}
+              </h1>
+              <div className="flex items-center gap-2 flex-wrap">
+                <MetaChip icon={<User className="w-3.5 h-3.5" />} label={studentName} />
+                <MetaChip icon={<Hash className="w-3.5 h-3.5" />} label={studentCode} mono />
+                <MetaChip icon={<GraduationCap className="w-3.5 h-3.5" />} label={level} />
+                <MetaChip icon={<BookOpen className="w-3.5 h-3.5" />} label={submission.assignment.course} />
+              </div>
+            </div>
+
+            {/* Content */}
+            <div
+              className="px-10 py-10 print:px-0 print:py-6 text-gray-800"
+              style={{
+                fontFamily: "'Amiri', 'Traditional Arabic', 'Segoe UI', serif",
+                fontSize: `${fontSize}px`,
+                lineHeight: lineHeight,
+                textAlign: "right",
+              }}
+              dangerouslySetInnerHTML={{ __html: contentHtml }}
+            />
+
+            {/* Footer - Signatures */}
+            <div className="px-10 py-8 border-t-2 border-gray-100 bg-gray-50 print:px-0 print:bg-transparent">
+              <div className="grid grid-cols-3 gap-6 text-center">
+                <div>
+                  <p className="text-xs font-black text-gray-700 mb-12">الطالب</p>
+                  <div className="border-t-2 border-gray-300 pt-2">
+                    <p className="text-[11px] font-black text-gray-800">{studentName}</p>
+                  </div>
+                </div>
+                <div>
+                  <p className="text-xs font-black text-gray-700 mb-12">أستاذ المادة</p>
+                  <div className="border-t-2 border-gray-300 pt-2">
+                    <p className="text-[11px] font-black text-gray-800">{docTitle} {docName}</p>
+                  </div>
+                </div>
+                <div>
+                  <p className="text-xs font-black text-gray-700 mb-12">رئيس القسم</p>
+                  <div className="border-t-2 border-gray-300 pt-2">
+                    <p className="text-[11px] font-black text-gray-800">.................................</p>
+                  </div>
                 </div>
               </div>
-            )}
-
-            {/* Page Content */}
-            <div className="flex-1 px-16 md:px-24 lg:px-32 py-10 print:px-0 print:py-6">
-              <div
-                className="text-gray-800 whitespace-pre-wrap"
-                style={{
-                  fontFamily: "'Amiri', 'Traditional Arabic', 'Segoe UI', serif",
-                  fontSize: `${fontSize}px`,
-                  lineHeight: lineHeight,
-                  textAlign: "justify",
-                }}
-              >
-                {currentText}
-              </div>
             </div>
-
-            {/* Page Footer */}
-            <div className="px-10 py-4 border-t-2 border-gray-100 flex items-center justify-between print:px-0">
-              <div className="text-[11px] font-black text-gray-500">
-                صفحة {currentPage} من {totalPages}
-              </div>
-              <div className="flex items-center gap-2">
-                <ShieldCheck className="w-3.5 h-3.5 text-[#1e5eb8]" />
-                <span className="text-[10px] font-bold text-gray-500">منظومة EARTH الأكاديمية</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Navigation Buttons */}
-          <div className="mt-6 flex items-center justify-between gap-4 print:hidden">
-            <button
-              onClick={prevPage}
-              disabled={currentPage === 1}
-              className="flex items-center gap-3 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed border-2 border-gray-200 rounded-2xl px-6 py-4 transition group"
-            >
-              <ChevronRight className="w-5 h-5 text-[#1e5eb8] group-hover:-translate-x-1 transition-transform" />
-              <div className="text-right">
-                <p className="text-[10px] font-black text-gray-400">السابق</p>
-                <p className="text-xs font-black text-gray-700">صفحة {Math.max(1, currentPage - 1)}</p>
-              </div>
-            </button>
-
-            <div className="hidden sm:flex items-center gap-2 px-5 py-3 bg-white border-2 border-gray-200 rounded-2xl">
-              <span className="text-xs font-black text-gray-500">انتقل لأي صفحة</span>
-              <input
-                type="range"
-                min={1}
-                max={totalPages}
-                value={currentPage}
-                onChange={(e) => setCurrentPage(parseInt(e.target.value))}
-                className="w-32 accent-[#1e5eb8]"
-              />
-              <span className="text-xs font-black text-[#1e5eb8] min-w-[60px] text-center">{currentPage} / {totalPages}</span>
-            </div>
-
-            <button
-              onClick={nextPage}
-              disabled={currentPage === totalPages}
-              className="flex items-center gap-3 bg-[#1e5eb8] hover:bg-[#1650a0] disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-2xl px-6 py-4 transition group"
-            >
-              <div className="text-left">
-                <p className="text-[10px] font-black text-blue-200">التالي</p>
-                <p className="text-xs font-black">صفحة {Math.min(totalPages, currentPage + 1)}</p>
-              </div>
-              <ChevronLeft className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-            </button>
           </div>
 
           {/* Trust note */}
@@ -389,7 +283,6 @@ export default function ViewSubmissionPage() {
             <CheckCircle2 className="w-5 h-5 text-[#1e5eb8] flex-shrink-0 mt-0.5" />
             <p className="text-xs font-bold text-gray-700 leading-relaxed">
               هذا البحث مسلّم إلكترونياً عبر منظومة EARTH الأكاديمية — تم توثيقه بتاريخ {new Date(submission.submittedAt).toLocaleString("ar-EG")}.
-              <span className="block mt-1 text-gray-400">💡 يمكنك التنقل بين الصفحات باستخدام أزرار الأسهم ← → على لوحة المفاتيح.</span>
             </p>
           </div>
         </div>

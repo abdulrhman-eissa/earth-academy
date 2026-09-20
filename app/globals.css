@@ -160,3 +160,132 @@ select:-webkit-autofill {
 .dark .bg-amber-50 .text-amber-700 { color: #fcd34d !important; }
 .dark .bg-blue-50 .text-blue-800,
 .dark .bg-blue-50 .text-blue-700 { color: #93c5fd !important; }
+
+/* ============================
+   Tiptap Pagination Plus Styles
+   ============================ */
+.tiptap-pagination-wrapper .tiptap {
+  outline: none;
+}
+
+.tiptap-pagination-wrapper .tiptap-page {
+  margin: 0 auto;
+  background: white;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.tiptap-pagination-wrapper .tiptap .ProseMirror {
+  outline: none;
+  min-height: auto;
+}
+
+/* عشان ما يظهرش سكرول مزدوج */
+.tiptap-pagination-wrapper .tiptap {
+  padding: 0 !important;
+}
+
+/* دعم RTL في المحرر */
+.tiptap-pagination-wrapper .tiptap [dir="rtl"],
+.tiptap-pagination-wrapper .tiptap p,
+.tiptap-pagination-wrapper .tiptap h1,
+.tiptap-pagination-wrapper .tiptap h2,
+.tiptap-pagination-wrapper .tiptap h3,
+.tiptap-pagination-wrapper .tiptap ul,
+.tiptap-pagination-wrapper .tiptap ol,
+.tiptap-pagination-wrapper .tiptap blockquote {
+  direction: rtl;
+  text-align: right;
+}
+
+/* placeholder */
+.tiptap-pagination-wrapper .tiptap p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: right;
+  color: #9ca3af;
+  pointer-events: none;
+  height: 0;
+}
+
+/* جداول */
+.tiptap-pagination-wrapper .tiptap table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 12px 0;
+}
+
+.tiptap-pagination-wrapper .tiptap th,
+.tiptap-pagination-wrapper .tiptap td {
+  border: 1px solid #d1d5db;
+  padding: 8px 12px;
+  text-align: right;
+}
+
+.tiptap-pagination-wrapper .tiptap th {
+  background: #f3f4f6;
+  font-weight: bold;
+}
+
+/* صور */
+.tiptap-pagination-wrapper .tiptap img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 12px auto;
+}
+
+/* ============================
+   Pagination Plus - RTL Fix
+   ============================ */
+.tiptap-pagination-wrapper {
+  width: 100% !important;
+  display: flex !important;
+  justify-content: center !important;
+  flex-direction: column !important;
+  align-items: center !important;
+}
+
+.tiptap-pagination-wrapper > div,
+.tiptap-pagination-wrapper > * {
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+/* الصفحات نفسها */
+.tiptap-pagination-wrapper .tiptap-page,
+.tiptap-pagination-wrapper [class*="page"] {
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+/* الـ ProseMirror جوه الصفحة */
+.tiptap-pagination-wrapper .ProseMirror,
+.tiptap-pagination-wrapper .tiptap {
+  width: 100% !important;
+  max-width: 100% !important;
+  direction: rtl !important;
+}
+
+/* المحرر نفسه بعرض كامل */
+.tiptap-pagination-wrapper .tiptap * {
+  max-width: 100% !important;
+}
+
+/* تصليح الصفحات الفرعية */
+.tiptap-pagination-wrapper [data-page-number] {
+  margin: 0 auto !important;
+}
+
+/* Page break visibility */
+.tiptap-pagination-wrapper .tiptap-page-gap {
+  width: 100% !important;
+  display: flex !important;
+  justify-content: center !important;
+}
+
+/* الـ wrapper الأساسي */
+.overflow-auto > .tiptap-pagination-wrapper {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  width: 100% !important;
+}

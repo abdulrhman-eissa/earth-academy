@@ -4,6 +4,12 @@ import { requireRole } from "@/lib/api-auth";
 import { notify } from "@/lib/notify";
 import { audit } from "@/lib/audit";
 
+interface ActivityEntry {
+  at: string;
+  type: string;
+  details?: string;
+}
+
 export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
   const auth = await requireRole("STUDENT");
   if ("error" in auth) return auth.error;
@@ -13,16 +19,16 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
   if (!body || typeof body !== "object") {
     return NextResponse.json({ error: "بيانات غير صالحة" }, { status: 400 });
   }
+
   const input = body as Record<string, unknown>;
   const text = typeof input.text === "string" ? input.text.trim() : "";
   const htmlContent = typeof input.htmlContent === "string" ? input.htmlContent : null;
   const defenseAnswer = typeof input.defenseAnswer === "string" ? input.defenseAnswer.trim() : null;
   const pasteAttempts = typeof input.pasteAttempts === "number" ? input.pasteAttempts : 0;
+  const action = input.action === "submit" ? "submit" : "draft";
+  const activityLog = Array.isArray(input.activityLog) ? (input.activityLog as ActivityEntry[]) : [];
 
-  if (text.length < 50) {
-    return NextResponse.json({ error: "نص البحث قصير جداً (50 حرف على الأقل)" }, { status: 400 });
-  }
-
+  // ===== فحص الصلاحيات =====
   const assignment = await prisma.assignment.findUnique({
     where: { id: assignmentId },
     select: { id: true, isPublished: true, status: true, title: true, course: true, facultyId: true },
@@ -37,7 +43,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
   });
 
   if (!profile?.chosenAssignmentId) {
-    return NextResponse.json({ error: "يجب اختيار تكليف أولاً قبل التسليم" }, { status: 403 });
+    return NextResponse.json({ error: "يجب اختيار تكليف أولاً" }, { status: 403 });
   }
   if (profile.chosenAssignmentId !== assignmentId) {
     return NextResponse.json({ error: "لا يمكنك التسليم لتكليف غير الذي اخترته" }, { status: 403 });
@@ -51,6 +57,21 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     return NextResponse.json({ error: "تمت مراجعة بحثك بالفعل ولا يمكن إعادة التسليم" }, { status: 409 });
   }
 
+  // ===== الشروط =====
+  // المسودة: بدون شروط
+  // التسليم: 50 حرف على الأقل
+  if (action === "submit") {
+    if (text.length < 50) {
+      return NextResponse.json({ error: "نص البحث قصير جداً (50 حرف على الأقل)" }, { status: 400 });
+    }
+    if (!defenseAnswer || defenseAnswer.trim().length < 3) {
+      return NextResponse.json({ error: "يجب إدخال عنوان البحث" }, { status: 400 });
+    }
+  }
+
+  const status = action === "submit" ? "SUBMITTED" : "DRAFT";
+
+  // ===== الحفظ =====
   const submission = await prisma.submission.upsert({
     where: { assignmentId_studentId: { assignmentId, studentId: auth.session.userId } },
     update: {
@@ -58,8 +79,9 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       htmlContent,
       defenseAnswer,
       pasteAttempts,
-      status: "SUBMITTED",
-      submittedAt: new Date(),
+      status,
+      activityLog: activityLog as never,
+      ...(action === "submit" ? { submittedAt: new Date() } : {}),
     },
     create: {
       assignmentId,
@@ -69,31 +91,35 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       htmlContent,
       defenseAnswer,
       pasteAttempts,
-      status: "SUBMITTED",
+      status,
+      activityLog: activityLog as never,
     },
     select: { id: true, status: true, submittedAt: true },
   });
 
-  await notify({
-    userId: assignment.facultyId,
-    type: "RESEARCH_SUBMITTED",
-    title: "تسليم بحث جديد",
-    body: `قام الطالب ${profile.fullName} (${profile.studentCode}) بتسليم بحثه في مادة: ${assignment.course}`,
-    relatedId: submission.id,
-  });
+  // ===== إشعار الأستاذ + Audit (للتسليم فقط) =====
+  if (action === "submit") {
+    await notify({
+      userId: assignment.facultyId,
+      type: "RESEARCH_SUBMITTED",
+      title: "تسليم بحث جديد",
+      body: `قام الطالب ${profile.fullName} (${profile.studentCode}) بتسليم بحثه في مادة: ${assignment.course}`,
+      relatedId: submission.id,
+    });
 
-  await audit({
-    actorId: auth.session.userId,
-    actorEmail: profile.studentCode,
-    actorRole: "STUDENT",
-    action: "SUBMIT_RESEARCH",
-    targetType: "Submission",
-    targetId: submission.id,
-    details: `مادة: ${assignment.course} — ${assignment.title}`,
-    request,
-  });
+    await audit({
+      actorId: auth.session.userId,
+      actorEmail: profile.studentCode,
+      actorRole: "STUDENT",
+      action: "SUBMIT_RESEARCH",
+      targetType: "Submission",
+      targetId: submission.id,
+      details: `مادة: ${assignment.course} — ${assignment.title}`,
+      request,
+    });
+  }
 
-  return NextResponse.json({ submission }, { status: 201 });
+  return NextResponse.json({ submission, action }, { status: 201 });
 }
 
 export async function GET(_request: Request, context: { params: Promise<{ id: string }> }) {
@@ -111,6 +137,8 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
       defenseAnswer: true,
       status: true,
       submittedAt: true,
+      activityLog: true,
+      pasteAttempts: true,
     },
   });
 

@@ -136,6 +136,7 @@ enum AssignmentStatus {
 }
 
 enum SubmissionStatus {
+  DRAFT
   SUBMITTED
   REVIEWED
   RETURNED
@@ -174,6 +175,7 @@ model Submission {
   text             String
   htmlContent      String?
   pdfUrl           String?
+  activityLog      Json?
   defenseAnswer    String?
   pasteAttempts    Int              @default(0)
   integrityScore   Int?

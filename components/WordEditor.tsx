@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useEditor, EditorContent, Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import TextAlign from "@tiptap/extension-text-align";
@@ -21,9 +21,8 @@ import {
   List, ListOrdered, Quote, Minus, Undo, Redo,
   Heading1, Heading2, Heading3, Type, Link as LinkIcon,
   Image as ImageIcon, Table as TableIcon, Highlighter,
-  Palette, Code, Sparkles,
+  Palette, Code, AlertTriangle,
 } from "lucide-react";
-
 
 // ============================================================
 // Type declarations for custom commands
@@ -103,23 +102,38 @@ export const FontFamily = Extension.create({
 });
 
 // ============================================================
-// المكوّن الأساسي
+// Hook
 // ============================================================
+export interface EditorStats {
+  words: number;
+  chars: number;
+  pages: number;
+}
+
+export type BlockReason = "paste" | "cut" | "drop";
+
 interface WordEditorProps {
   content: string;
   onChange: (html: string) => void;
   editable?: boolean;
   placeholder?: string;
+  onBlockAttempt?: (reason: BlockReason) => void;
+  onStats?: (stats: EditorStats) => void;
 }
 
-export function useWordEditor({ content, onChange, editable = true, placeholder = "ابدأ كتابة البحث هنا..." }: WordEditorProps) {
-  return useEditor({
+export function useWordEditor({
+  content,
+  onChange,
+  editable = true,
+  placeholder = "ابدأ كتابة البحث هنا...",
+  onBlockAttempt,
+  onStats,
+}: WordEditorProps) {
+  const editor = useEditor({
     immediatelyRender: false,
     editable,
     extensions: [
-      StarterKit.configure({
-        heading: { levels: [1, 2, 3] },
-      }),
+      StarterKit.configure({ heading: { levels: [1, 2, 3] } }),
       Underline,
       TextStyle,
       Color,
@@ -141,6 +155,22 @@ export function useWordEditor({ content, onChange, editable = true, placeholder 
     content,
     onUpdate: ({ editor }) => {
       onChange(editor.getHTML());
+      if (onStats) {
+        const text = editor.getText();
+        const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+        const chars = text.length;
+        const pages = Math.max(1, Math.ceil(words / 250));
+        onStats({ words, chars, pages });
+      }
+    },
+    onCreate: ({ editor }) => {
+      if (onStats) {
+        const text = editor.getText();
+        const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+        const chars = text.length;
+        const pages = Math.max(1, Math.ceil(words / 250));
+        onStats({ words, chars, pages });
+      }
     },
     editorProps: {
       attributes: {
@@ -148,8 +178,33 @@ export function useWordEditor({ content, onChange, editable = true, placeholder 
         dir: "rtl",
         style: "font-family: 'Amiri', 'Traditional Arabic', serif;",
       },
+      // منع اللصق
+      handlePaste: () => {
+        onBlockAttempt?.("paste");
+        return true; // يمنع الافتراضي
+      },
+      // منع السحب والإفلات
+      handleDrop: () => {
+        onBlockAttempt?.("drop");
+        return true;
+      },
+      // منع Ctrl+V و Ctrl+X
+      handleKeyDown: (_view, event) => {
+        const ctrl = event.ctrlKey || event.metaKey;
+        if (ctrl && (event.key === "v" || event.key === "V")) {
+          onBlockAttempt?.("paste");
+          return true;
+        }
+        if (ctrl && (event.key === "x" || event.key === "X")) {
+          onBlockAttempt?.("cut");
+          return true;
+        }
+        return false;
+      },
     },
   });
+
+  return editor;
 }
 
 // ============================================================
@@ -182,9 +237,7 @@ export function EditorToolbar({ editor }: { editor: Editor | null }) {
       disabled={disabled}
       title={title}
       className={`p-2 rounded-lg transition ${
-        active
-          ? "bg-[#1e5eb8] text-white"
-          : "hover:bg-gray-100 text-gray-700"
+        active ? "bg-[#1e5eb8] text-white" : "hover:bg-gray-100 text-gray-700"
       } disabled:opacity-30 disabled:cursor-not-allowed`}
     >
       {children}
@@ -195,7 +248,6 @@ export function EditorToolbar({ editor }: { editor: Editor | null }) {
 
   return (
     <div className="sticky top-0 z-20 bg-white border-b-2 border-gray-200 p-2 flex flex-wrap items-center gap-1" dir="rtl">
-      {/* Undo / Redo */}
       <TB onClick={() => editor.chain().focus().undo().run()} disabled={!editor.can().undo()} title="تراجع">
         <Undo className="w-4 h-4" />
       </TB>
@@ -205,7 +257,6 @@ export function EditorToolbar({ editor }: { editor: Editor | null }) {
 
       <Divider />
 
-      {/* Headings */}
       <TB onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} active={editor.isActive("heading", { level: 1 })} title="عنوان 1">
         <Heading1 className="w-4 h-4" />
       </TB>
@@ -221,7 +272,6 @@ export function EditorToolbar({ editor }: { editor: Editor | null }) {
 
       <Divider />
 
-      {/* Text formatting */}
       <TB onClick={() => editor.chain().focus().toggleBold().run()} active={editor.isActive("bold")} title="عريض">
         <Bold className="w-4 h-4" />
       </TB>
@@ -237,7 +287,6 @@ export function EditorToolbar({ editor }: { editor: Editor | null }) {
 
       <Divider />
 
-      {/* Font size */}
       <select
         value={fontSize}
         onChange={(e) => editor.chain().focus().setFontSize(e.target.value).run()}
@@ -255,7 +304,7 @@ export function EditorToolbar({ editor }: { editor: Editor | null }) {
         className="px-2 py-1.5 text-xs font-bold border border-gray-200 rounded-lg bg-white"
         title="نوع الخط"
       >
-        <option value="Amiri">Amiri (أكاديمي)</option>
+        <option value="Amiri">Amiri</option>
         <option value="Arial">Arial</option>
         <option value="Tahoma">Tahoma</option>
         <option value="Traditional Arabic">Traditional Arabic</option>
@@ -263,8 +312,7 @@ export function EditorToolbar({ editor }: { editor: Editor | null }) {
 
       <Divider />
 
-      {/* Align */}
-      <TB onClick={() => editor.chain().focus().setTextAlign("right").run()} active={editor.isActive({ textAlign: "right" })} title="محاذاة يمين">
+      <TB onClick={() => editor.chain().focus().setTextAlign("right").run()} active={editor.isActive({ textAlign: "right" })} title="يمين">
         <AlignRight className="w-4 h-4" />
       </TB>
       <TB onClick={() => editor.chain().focus().setTextAlign("center").run()} active={editor.isActive({ textAlign: "center" })} title="وسط">
@@ -279,7 +327,6 @@ export function EditorToolbar({ editor }: { editor: Editor | null }) {
 
       <Divider />
 
-      {/* Lists */}
       <TB onClick={() => editor.chain().focus().toggleBulletList().run()} active={editor.isActive("bulletList")} title="قائمة نقطية">
         <List className="w-4 h-4" />
       </TB>
@@ -295,27 +342,17 @@ export function EditorToolbar({ editor }: { editor: Editor | null }) {
 
       <Divider />
 
-      {/* Colors */}
       <label className="p-2 rounded-lg hover:bg-gray-100 cursor-pointer" title="لون النص">
         <Palette className="w-4 h-4 text-gray-700" />
-        <input
-          type="color"
-          onChange={(e) => editor.chain().focus().setColor(e.target.value).run()}
-          className="hidden"
-        />
+        <input type="color" onChange={(e) => editor.chain().focus().setColor(e.target.value).run()} className="hidden" />
       </label>
       <label className="p-2 rounded-lg hover:bg-gray-100 cursor-pointer" title="تظليل">
         <Highlighter className="w-4 h-4 text-gray-700" />
-        <input
-          type="color"
-          onChange={(e) => editor.chain().focus().toggleHighlight({ color: e.target.value }).run()}
-          className="hidden"
-        />
+        <input type="color" onChange={(e) => editor.chain().focus().toggleHighlight({ color: e.target.value }).run()} className="hidden" />
       </label>
 
       <Divider />
 
-      {/* Insert */}
       <TB onClick={addLink} active={editor.isActive("link")} title="إدراج رابط">
         <LinkIcon className="w-4 h-4" />
       </TB>
@@ -333,15 +370,63 @@ export function EditorToolbar({ editor }: { editor: Editor | null }) {
 }
 
 // ============================================================
-// Editor مع Toolbar
+// Editor مع Toolbar + Stats + Page Boundaries
 // ============================================================
-export default function WordEditor({ content, onChange, editable = true, placeholder }: WordEditorProps) {
-  const editor = useWordEditor({ content, onChange, editable, placeholder });
+export default function WordEditor({
+  content,
+  onChange,
+  editable = true,
+  placeholder,
+  onBlockAttempt,
+  onStats,
+}: WordEditorProps) {
+  const editor = useWordEditor({ content, onChange, editable, placeholder, onBlockAttempt, onStats });
 
   return (
     <div className="bg-white rounded-2xl border-2 border-gray-200 overflow-hidden">
       {editable && <EditorToolbar editor={editor} />}
       <EditorContent editor={editor} className="p-8 min-h-[500px]" />
+    </div>
+  );
+}
+
+// ============================================================
+// شريط الإحصائيات — شريط سفلي ثابت
+// ============================================================
+export function EditorStatsBar({
+  stats,
+  lastSaveText,
+  blockedCount,
+}: {
+  stats: EditorStats;
+  lastSaveText?: string;
+  blockedCount?: number;
+}) {
+  return (
+    <div className="bg-gray-50 border-t-2 border-gray-200 px-6 py-2.5 flex items-center justify-between flex-wrap gap-3 text-xs font-black text-gray-600" dir="rtl">
+      <div className="flex items-center gap-5 flex-wrap">
+        <span className="flex items-center gap-1.5">
+          <span className="text-[#1e5eb8]">📄 الصفحات:</span>
+          <span className="text-gray-900">{stats.pages}</span>
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="text-emerald-600">📝 الكلمات:</span>
+          <span className="text-gray-900">{stats.words.toLocaleString("ar-EG")}</span>
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="text-purple-600">🔤 الحروف:</span>
+          <span className="text-gray-900">{stats.chars.toLocaleString("ar-EG")}</span>
+        </span>
+        {blockedCount !== undefined && blockedCount > 0 && (
+          <span className="flex items-center gap-1.5 text-red-600">
+            <AlertTriangle className="w-3.5 h-3.5" />
+            <span>محاولات نسخ/لصق محظورة: {blockedCount}</span>
+          </span>
+        )}
+      </div>
+      {lastSaveText && (
+        <span className="text-[10px] text-gray-400 font-mono">{lastSaveText}</span>
+      )}
     </div>
   );
 }
