@@ -29,14 +29,6 @@ const LEVEL_LABELS: Record<string, string> = {
   LEVEL_4: "الفرقة الرابعة",
 };
 
-function scoreLabel(score: number | null): { text: string; cls: string } {
-  if (score === null) return { text: "قيد المراجعة", cls: "bg-amber-100 text-amber-800" };
-  if (score >= 90) return { text: "ممتاز", cls: "bg-blue-100 text-[#1e5eb8]" };
-  if (score >= 80) return { text: "جيد جداً", cls: "bg-blue-100 text-blue-800" };
-  if (score >= 70) return { text: "جيد", cls: "bg-indigo-100 text-indigo-800" };
-  if (score >= 60) return { text: "مقبول", cls: "bg-gray-100 text-gray-700" };
-  return { text: "راسب", cls: "bg-red-100 text-red-800" };
-}
 
 export default function AffairsGradesPage() {
   const router = useRouter();
@@ -98,15 +90,13 @@ export default function AffairsGradesPage() {
         const name = r.student.studentProfile?.fullName ?? r.student.email;
         const code = r.student.studentProfile?.studentCode ?? r.student.email;
         const level = LEVEL_LABELS[r.student.studentProfile?.academicLevel ?? ""] ?? "غير محدد";
-        const lbl = scoreLabel(r.score).text;
-        return `<tr>
+                return `<tr>
           <td style="border:1px solid #333;padding:6px;text-align:center;">${i + 1}</td>
           <td style="border:1px solid #333;padding:6px;font-family:monospace;">${code}</td>
           <td style="border:1px solid #333;padding:6px;">${name}</td>
           <td style="border:1px solid #333;padding:6px;">${level}</td>
           <td style="border:1px solid #333;padding:6px;">${r.assignment.course}</td>
           <td style="border:1px solid #333;padding:6px;text-align:center;font-weight:bold;">${r.score ?? "—"}</td>
-          <td style="border:1px solid #333;padding:6px;text-align:center;">${lbl}</td>
           <td style="border:1px solid #333;padding:6px;">${r.notes ?? "—"}</td>
         </tr>`;
       }).join("");
@@ -122,7 +112,7 @@ export default function AffairsGradesPage() {
           <h3 style="margin:6px 0 0;font-size:16px;font-weight:normal;">كلية اللغة العربية بالقاهرة — قسم التاريخ والحضارة</h3>
           <h1 style="margin:14px 0 6px;font-size:22px;">كشف رصd درجات الأبحاث العلمية</h1>
           <p style="margin:0;font-size:12px;color:#555;">
-            التاريخ: ${new Date().toLocaleDateString("ar-EG")} — عدد الصفوف: ${filtered.length} — المتوسط: ${avg}/100
+            التاريخ: ${new Date().toLocaleDateString("ar-EG")} — عدد الصفوف: ${filtered.length} — المتوسط: ${avg}/20
           </p>
         </div>
 
@@ -135,7 +125,6 @@ export default function AffairsGradesPage() {
               <th style="border:1px solid #333;padding:8px;">الفرقة</th>
               <th style="border:1px solid #333;padding:8px;">المادة</th>
               <th style="border:1px solid #333;padding:8px;">الدرجة</th>
-              <th style="border:1px solid #333;padding:8px;">التقدير</th>
               <th style="border:1px solid #333;padding:8px;">ملاحظات</th>
             </tr>
           </thead>
@@ -183,13 +172,12 @@ export default function AffairsGradesPage() {
     let csv = "data:text/csv;charset=utf-8,\uFEFF";
     csv += "جامعة الأزهر الشريف - كلية اللغة العربية - قسم التاريخ والحضارة\n";
     csv += "كشف الدرجات المعتمد — شؤون الطلاب\n\n";
-    csv += "الرقم القومي,اسم الطالب,الفرقة,المادة,عنوان البحث,الدرجة,التقدير,ملاحظات\n";
+    csv += "الرقم القومي,اسم الطالب,الفرقة,المادة,عنوان البحث,الدرجة,ملاحظات\n";
     filtered.forEach((r) => {
       const name = r.student.studentProfile?.fullName ?? r.student.email;
       const code = r.student.studentProfile?.studentCode ?? r.student.email;
       const level = LEVEL_LABELS[r.student.studentProfile?.academicLevel ?? ""] ?? "غير محدد";
-      const lbl = scoreLabel(r.score).text;
-      csv += `"${code}","${name}","${level}","${r.assignment.course}","${r.assignment.title}","${r.score ?? "-"}","${lbl}","${r.notes ?? "-"}"\n`;
+            csv += `"${code}","${name}","${level}","${r.assignment.course}","${r.assignment.title}","${r.score ?? "-"}","${r.notes ?? "-"}"\n`;
     });
     const link = document.createElement("a");
     link.setAttribute("href", encodeURI(csv));
@@ -252,7 +240,7 @@ export default function AffairsGradesPage() {
               <p className="text-xs text-gray-500 font-bold mb-1 flex items-center gap-2">
                 <TrendingUp className="w-4 h-4" /> المتوسط العام
               </p>
-              <p className="text-3xl font-extrabold text-[#1e5eb8]">{average} <span className="text-base text-gray-400">/100</span></p>
+              <p className="text-3xl font-extrabold text-[#1e5eb8]">{average} <span className="text-base text-gray-400">/20</span></p>
             </div>
           </div>
 
@@ -301,7 +289,6 @@ export default function AffairsGradesPage() {
                     <th className="p-4">المادة</th>
                     <th className="p-4">عنوان البحث</th>
                     <th className="p-4 text-center">الدرجة</th>
-                    <th className="p-4 text-center">التقدير</th>
                     <th className="p-4">ملاحظات</th>
                   </tr>
                 </thead>
@@ -315,21 +302,24 @@ export default function AffairsGradesPage() {
                       const name = r.student.studentProfile?.fullName ?? r.student.email;
                       const code = r.student.studentProfile?.studentCode ?? r.student.email;
                       const level = LEVEL_LABELS[r.student.studentProfile?.academicLevel ?? ""] ?? "غير محدد";
-                      const lbl = scoreLabel(r.score);
+                      const graded = r.score !== null;
                       return (
-                        <tr key={r.id} className="hover:bg-gray-50">
+                        <tr key={r.id} className="hover:bg-blue-50/40 transition">
                           <td className="p-4 font-mono text-gray-700 font-bold">{code}</td>
                           <td className="p-4 font-bold text-gray-900">{name}</td>
                           <td className="p-4 text-gray-600">{level}</td>
                           <td className="p-4 font-bold text-[#1e5eb8]">{r.assignment.course}</td>
                           <td className="p-4 text-gray-700 max-w-xs truncate">{r.assignment.title}</td>
-                          <td className="p-4 text-center font-extrabold text-gray-900">
-                            {r.score ?? <span className="text-amber-700 text-xs">—</span>}
-                          </td>
                           <td className="p-4 text-center">
-                            <span className={`px-3 py-1 rounded-lg text-xs font-bold ${lbl.cls}`}>{lbl.text}</span>
+                            {graded ? (
+                              <span className="inline-flex items-center justify-center min-w-[48px] px-3 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 font-extrabold">
+                                {r.score}
+                              </span>
+                            ) : (
+                              <span className="text-gray-400 text-xs font-bold">لم تُرصد</span>
+                            )}
                           </td>
-                          <td className="p-4 text-xs text-gray-600 max-w-xs truncate">{r.notes ?? "—"}</td>
+                          <td className="p-4 text-xs text-gray-600 max-w-xs truncate" title={r.notes ?? ""}>{r.notes ?? "—"}</td>
                         </tr>
                       );
                     })
@@ -379,7 +369,6 @@ export default function AffairsGradesPage() {
                   <th style={{ border: "1px solid #000", padding: "6px" }}>الفرقة</th>
                   <th style={{ border: "1px solid #000", padding: "6px" }}>المادة</th>
                   <th style={{ border: "1px solid #000", padding: "6px" }}>الدرجة</th>
-                  <th style={{ border: "1px solid #000", padding: "6px" }}>التقدير</th>
                   <th style={{ border: "1px solid #000", padding: "6px" }}>ملاحظات</th>
                 </tr>
               </thead>
@@ -396,7 +385,6 @@ export default function AffairsGradesPage() {
                       <td style={{ border: "1px solid #000", padding: "6px" }}>{level}</td>
                       <td style={{ border: "1px solid #000", padding: "6px" }}>{r.assignment.course}</td>
                       <td style={{ border: "1px solid #000", padding: "6px", textAlign: "center", fontWeight: "bold" }}>{r.score ?? "—"}</td>
-                      <td style={{ border: "1px solid #000", padding: "6px", textAlign: "center" }}>{scoreLabel(r.score).text}</td>
                       <td style={{ border: "1px solid #000", padding: "6px" }}>{r.notes ?? "—"}</td>
                     </tr>
                   );

@@ -424,7 +424,7 @@ export default function AdminDashboard() {
                           </div>
                           <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/15 border border-white/25">
                             <Target className="w-3.5 h-3.5 text-white" />
-                            <span className="text-[11px] font-black text-white">{stats.average}/100 متوسط</span>
+                            <span className="text-[11px] font-black text-white">{stats.average}/20 متوسط</span>
                           </div>
                         </div>
                       </div>
@@ -1281,7 +1281,7 @@ function BarRow({ label, value, total, color }: { label: string; value: number; 
 function ProgressRing({ percent, size, stroke, color, label, sublabel }: { percent: number; size: number; stroke: number; color: string; label: string; sublabel: string }) {
   const radius = (size - stroke) / 2;
   const circumference = 2 * Math.PI * radius;
-  const offset = circumference - (percent / 100) * circumference;
+  const offset = circumference - (percent / 20) * circumference;
   return (
     <div className="relative" style={{ width: size, height: size }}>
       <svg width={size} height={size} className="transform -rotate-90">

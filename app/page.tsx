@@ -119,10 +119,30 @@ export default function HomePage() {
         </div>
 
         {/* Bottom text inside blue panel */}
-        <div className="absolute bottom-6 left-0 right-0 text-center">
-          <p className="text-white/90 text-[11px] font-bold">
-            منظومة EARTH — كلية اللغة العربية بالقاهرة، جامعة الأزهر الشريف
-          </p>
+        <div className="absolute bottom-6 left-0 right-0 text-center px-4">
+          <div className="inline-flex flex-col items-center gap-2">
+            {/* Line 1: University */}
+            <p className="text-white/95 text-[12px] font-black tracking-wide">
+              جامعة الأزهر الشريف
+            </p>
+            {/* Separator */}
+            <div className="flex items-center gap-2 w-full">
+              <span className="h-px flex-1 bg-white/30" />
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-300" />
+              <span className="h-px flex-1 bg-white/30" />
+            </div>
+            {/* Line 2: Faculty */}
+            <p className="text-white/80 text-[11px] font-bold">
+              كلية اللغة العربية بالقاهرة
+            </p>
+            {/* Line 3: Department - highlighted */}
+            <div className="mt-1 inline-flex items-center gap-2 bg-white/15 border border-white/25 rounded-full px-3 py-1 backdrop-blur-sm">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-300 animate-pulse" />
+              <p className="text-amber-100 text-[11px] font-black">
+                قسم التاريخ والحضارة
+              </p>
+            </div>
+          </div>
         </div>
       </div>
 

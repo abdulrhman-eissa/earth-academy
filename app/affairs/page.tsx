@@ -8,7 +8,7 @@ import {
   Loader2, BarChart3, CheckCircle2,
   KeyRound,
 } from "lucide-react";
-import NotificationBell from "@/components/NotificationBell";
+import FloatingAlert from "@/components/FloatingAlert";
 import Link from "next/link";
 
 interface Stats {
@@ -84,8 +84,7 @@ export default function AffairsDashboard() {
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <NotificationBell variant="dark" />
-          <Link
+<Link
             href="/change-password"
             className="bg-white/15 hover:bg-white/25 border border-white/20 text-white p-2.5 rounded-2xl transition flex items-center justify-center"
             title="تغيير كلمة المرور"
@@ -98,6 +97,29 @@ export default function AffairsDashboard() {
           >
             <Award className="w-4 h-4" /> سجل الدرجات
           </Link>
+          <FloatingAlert
+            variant="bell"
+            items={[
+              {
+                type: "welcome",
+                label: "لوحة شؤون الطلاب والعمادة — متابعة شاملة",
+                color: "blue" as const,
+                priority: 1,
+              },
+              ...(stats && stats.pendingSubmissions > 0 ? [{
+                type: "pending",
+                label: stats.pendingSubmissions + " تسليم قيد المراجعة",
+                color: "amber" as const,
+                priority: 2,
+              }] : []),
+              ...(stats && stats.totalStudents > 0 ? [{
+                type: "students",
+                label: stats.totalStudents + " طالب مسجّل في المنظومة",
+                color: "emerald" as const,
+                priority: 3,
+              }] : []),
+            ]}
+          />
           <button
             onClick={handleLogout}
             className="bg-red-600 hover:bg-red-700 text-white p-3 rounded-2xl transition"

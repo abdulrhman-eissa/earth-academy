@@ -18,7 +18,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
   const score = typeof input.score === "number" ? input.score : null;
   const notes = typeof input.notes === "string" ? input.notes : null;
 
-  if (score !== null && (score < 0 || score > 100)) {
+  if (score !== null && (score < 0 || score > 20)) {
     return NextResponse.json({ error: "الدرجة يجب أن تكون بين 0 و 100" }, { status: 400 });
   }
 
@@ -61,7 +61,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
         userId: info.studentId,
         type: "GRADE_ADDED",
         title: "تم رصد درجتك",
-        body: `تم رصد درجة بحثك في مادة: ${info.assignment.course} — الدرجة: ${score}/100`,
+        body: `تم رصد درجة بحثك في مادة: ${info.assignment.course} — الدرجة: ${score}/20`,
         relatedId: id,
       });
     }
@@ -73,7 +73,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
     action: score !== null ? "GRADE_SUBMISSION" : "UPDATE_SUBMISSION",
     targetType: "Submission",
     targetId: id,
-    details: score !== null ? `الدرجة: ${score}/100` : `ملاحظات: ${notes?.slice(0, 50) ?? "—"}`,
+    details: score !== null ? `الدرجة: ${score}/20` : `ملاحظات: ${notes?.slice(0, 50) ?? "—"}`,
     request,
   });
 

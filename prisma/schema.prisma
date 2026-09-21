@@ -156,6 +156,12 @@ model Assignment {
   facultyProfile   FacultyProfile?  @relation(fields: [facultyProfileId], references: [id], onDelete: SetNull)
   submissions      Submission[]
   chosenBy         StudentProfile[] @relation("ChosenByStudent")
+
+  voiceData        String?
+  voiceMimeType    String?
+  voiceDuration    Int?
+  voiceUpdatedAt   DateTime?
+
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
 

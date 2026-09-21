@@ -8,7 +8,8 @@ import {
   Plus, BookOpen, Save, TrendingUp, Clock, CheckCircle2, Loader2,
   KeyRound,
 } from "lucide-react";
-import NotificationBell from "@/components/NotificationBell";
+import VoiceRecorder from "@/components/VoiceRecorder";
+import FloatingAlert from "@/components/FloatingAlert";
 
 interface Assignment {
   id: string;
@@ -200,14 +201,17 @@ export default function FacultyDashboard() {
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <NotificationBell variant="dark" />
-          <Link
+<Link
             href="/change-password"
             className="bg-white/15 hover:bg-white/25 border border-white/20 text-white p-2.5 rounded-2xl transition flex items-center justify-center"
             title="تغيير كلمة المرور"
           >
             <KeyRound className="w-4 h-4" />
           </Link>
+          <FloatingAlert
+            variant="bell"
+            items={pendingCount > 0 ? [{ type: "pending", label: pendingCount + " " + (pendingCount === 1 ? "تسليم محتاج رصد" : "تسليمات محتاجة رصد"), color: "amber" as const, priority: 1 }] : []}
+          />
           <button
             onClick={handleExportCSV}
             suppressHydrationWarning
@@ -360,6 +364,9 @@ export default function FacultyDashboard() {
                 </div>
               </div>
 
+              {/* Voice Recorder */}
+              <VoiceRecorder assignmentId={selectedId} />
+
               {/* Table */}
               <div className="bg-white rounded-3xl border border-gray-200 overflow-hidden shadow-sm">
                 <div className="overflow-x-auto">
@@ -370,7 +377,7 @@ export default function FacultyDashboard() {
                         <th className="p-4">اسم الطالب</th>
                         <th className="p-4">الفرقة</th>
                         <th className="p-4 text-center">قراءة البحث</th>
-                        <th className="p-4 text-center">الدرجة /100</th>
+                        <th className="p-4 text-center">الدرجة /20</th>
                         <th className="p-4">ملاحظات</th>
                       </tr>
                     </thead>
@@ -412,7 +419,7 @@ export default function FacultyDashboard() {
                                 <input
                                   type="number"
                                   min={0}
-                                  max={100}
+                                  max={20}
                                   value={s.score ?? ""}
                                   onChange={(e) =>
                                     handleScoreChange(
@@ -543,7 +550,7 @@ export default function FacultyDashboard() {
                   <input
                     type="number"
                     min={newMin}
-                    max={100}
+                    max={20}
                     value={newMax}
                     onChange={(e) => setNewMax(parseInt(e.target.value) || 10)}
                     className="w-full p-3.5 border border-gray-200 rounded-2xl text-sm bg-gray-50 text-gray-900 font-mono outline-none focus:border-[#1e5eb8] focus:bg-white"

@@ -40,10 +40,10 @@ const LEVEL_LABELS: Record<string, string> = {
 
 function scoreLabel(score: number | null): { text: string; bg: string; color: string } {
   if (score === null) return { text: "قيد المراجعة", bg: "#fef3c7", color: "#b45309" };
-  if (score >= 90) return { text: "ممتاز", bg: "#d1fae5", color: "#065f46" };
-  if (score >= 80) return { text: "جيد جداً", bg: "#dbeafe", color: "#1e40af" };
-  if (score >= 70) return { text: "جيد", bg: "#e0e7ff", color: "#3730a3" };
-  if (score >= 60) return { text: "مقبول", bg: "#f3f4f6", color: "#374151" };
+  if (score >= 18) return { text: "ممتاز", bg: "#d1fae5", color: "#065f46" };
+  if (score >= 16) return { text: "جيد جداً", bg: "#dbeafe", color: "#1e40af" };
+  if (score >= 14) return { text: "جيد", bg: "#e0e7ff", color: "#3730a3" };
+  if (score >= 12) return { text: "مقبول", bg: "#f3f4f6", color: "#374151" };
   return { text: "راسب", bg: "#fee2e2", color: "#991b1b" };
 }
 
@@ -163,7 +163,7 @@ export default function ViewSubmissionPage() {
           <InfoItem icon={<GraduationCap className="w-4 h-4" />} label="الفرقة" value={level} sub={submission.student.email.split("@")[0]} />
           <InfoItem icon={<BookOpen className="w-4 h-4" />} label="المادة" value={submission.assignment.course} sub={submission.assignment.title} />
           <InfoItem icon={<User className="w-4 h-4" />} label="أستاذ المادة" value={docName} sub={docTitle || "—"} />
-          <InfoItem icon={<Award className="w-4 h-4" />} label="الدرجة" value={submission.score !== null ? `${submission.score} / 100` : "قيد المراجعة"} sub={submission.score !== null ? lbl.text : "لم تُرصد بعد"} valueColor={submission.score !== null ? "#1e5eb8" : "#b45309"} />
+          <InfoItem icon={<Award className="w-4 h-4" />} label="الدرجة" value={submission.score !== null ? `${submission.score} / 20` : "قيد المراجعة"} sub={submission.score !== null ? lbl.text : "لم تُرصد بعد"} valueColor={submission.score !== null ? "#1e5eb8" : "#b45309"} />
           <InfoItem icon={<Calendar className="w-4 h-4" />} label="تاريخ التسليم" value={new Date(submission.submittedAt).toLocaleDateString("ar-EG")} sub={new Date(submission.submittedAt).toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit" })} />
         </div>
       </div>

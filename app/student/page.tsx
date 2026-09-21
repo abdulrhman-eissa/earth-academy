@@ -9,7 +9,9 @@ import {
   FileEdit, Eye, ShieldCheck, Calendar, TrendingUp,
   KeyRound,
 } from "lucide-react";
-import NotificationBell from "@/components/NotificationBell";
+import VoicePlayer from "@/components/VoicePlayer";
+import FloatingAlert from "@/components/FloatingAlert";
+import { Mic, AlertCircle as AlertIcon } from "lucide-react";
 
 interface Assignment {
   id: string;
@@ -38,6 +40,7 @@ export default function StudentDashboard() {
   const [assignment, setAssignment] = useState<Assignment | null>(null);
   const [submission, setSubmission] = useState<SubmissionInfo | null>(null);
   const [loading, setLoading] = useState(true);
+  const [alerts, setAlerts] = useState<Array<{ type: string; label: string; color: "blue" | "amber" | "red" | "emerald" | "purple"; priority: number }>>([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -114,6 +117,10 @@ export default function StudentDashboard() {
           });
         }
 
+        // جلب التنبيهات
+        const alertsRes = await fetch("/api/student/alerts").then((r) => r.ok ? r.json() : { alerts: [] }).catch(() => ({ alerts: [] }));
+        setAlerts(alertsRes.alerts || []);
+
         setLoading(false);
       })
       .catch(() => router.replace("/student/login"));
@@ -171,8 +178,7 @@ export default function StudentDashboard() {
         </div>
 
         <div className="flex items-center gap-2.5">
-          <NotificationBell variant="dark" />
-          <Link
+<Link
             href="/change-password"
             className="bg-white/15 hover:bg-white/25 border border-white/20 text-white p-2.5 rounded-2xl transition flex items-center justify-center"
             title="تغيير كلمة المرور"
@@ -279,6 +285,11 @@ export default function StudentDashboard() {
           </div>
         )}
 
+        {/* ============ Voice from Faculty ============ */}
+        {assignment && (
+          <VoicePlayer assignmentId={assignment.id} />
+        )}
+
         {/* ============ Grade & Notes (if graded) ============ */}
         {isGraded && submission && (
           <div className="grid md:grid-cols-2 gap-5">
@@ -288,7 +299,7 @@ export default function StudentDashboard() {
                 <span className="text-xs font-black">الدرجة المرصودة</span>
               </div>
               <p className="text-6xl font-black">{submission.score}</p>
-              <p className="text-xs font-bold opacity-90 mt-1">من 100</p>
+              <p className="text-xs font-bold opacity-90 mt-1">من 20</p>
             </div>
 
             {submission.notes && (
@@ -353,6 +364,15 @@ export default function StudentDashboard() {
           </div>
         )}
       </main>
+
+      {/* Floating Alert */}
+      {alerts.length > 0 && (
+        <FloatingAlert
+          items={alerts.map((a) => ({ ...a, icon: a.type === "voice" ? <Mic className="w-5 h-5" /> : <AlertIcon className="w-5 h-5" /> }))}
+          variant="floating"
+          position="top-left"
+        />
+      )}
     </div>
   );
 }
