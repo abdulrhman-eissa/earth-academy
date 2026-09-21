@@ -47,3 +47,13 @@ next-env.d.ts
 *.bak
 *.zip
 app/api/db-test/
+
+# AI tools (personal)
+.agents/
+.claude/
+.windsurf/
+skills-lock.json
+
+# backups & archives
+*.bak
+*.zip
