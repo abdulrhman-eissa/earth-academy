@@ -34,3 +34,12 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## MCP (Magic UI)
+
+This repository provides a safe template at `/home/runner/work/earth-academy/earth-academy/.mcp.example.json` for enabling Magic UI MCP locally. Merge the `magicuidesign-mcp` entry into your local MCP file (for example `.mcp.json`) alongside any existing MCP servers (including UI/UX Pro Max), and do not remove existing entries.
+
+Use cases include generating and refining Magic UI components such as:
+- blur fade text animation
+- grid background
+- vertical marquee
