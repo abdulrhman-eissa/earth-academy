@@ -34,3 +34,25 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## UI/UX Pro Max for Copilot (EARTH)
+
+UI/UX Pro Max is installed locally in this repository for GitHub Copilot under:
+
+- `.github/prompts/ui-ux-pro-max.prompt.md`
+- `.github/prompts/ui-ux-pro-max/` (search data + Python scripts)
+
+Use it for UI/UX work before implementing designs, especially for EARTH pages like `/egypt`.
+
+### Quick commands
+
+```bash
+# Basic search
+npm run uipro:search -- "historical archive layout" --domain style --stack nextjs
+
+# Generate design system (pass your query after --)
+npm run uipro:design-system -- "historical archive egypt manuscripts maps" --stack nextjs -p "EARTH Egypt"
+
+# Ready example for /egypt (persists MASTER + pages/egypt.md)
+npm run uipro:egypt:design-system
+```

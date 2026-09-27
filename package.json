@@ -7,6 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "uipro:search": "python3 .github/prompts/ui-ux-pro-max/scripts/search.py",
+    "uipro:design-system": "python3 .github/prompts/ui-ux-pro-max/scripts/search.py --design-system",
+    "uipro:egypt:design-system": "python3 .github/prompts/ui-ux-pro-max/scripts/search.py \"historical archive egypt manuscripts maps timeline\" --design-system --stack nextjs -p \"EARTH Egypt Archive\" --persist --page \"egypt\"",
     "postinstall": "prisma generate"
   },
   "dependencies": {

@@ -54,6 +54,14 @@ app/api/db-test/
 .windsurf/
 skills-lock.json
 
+# skill/search temporary outputs
+audit-output/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.mypy_cache/
+
 # backups & archives
 *.bak
 *.zip
