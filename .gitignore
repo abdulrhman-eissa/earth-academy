@@ -53,6 +53,8 @@ app/api/db-test/
 .claude/
 .windsurf/
 skills-lock.json
+.mcp.json
+.mcp.local.json
 
 # backups & archives
 *.bak
